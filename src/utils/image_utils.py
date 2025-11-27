@@ -107,8 +107,10 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
 
+        chromium_path = os.getenv("CHROMIUM_PATH", "chromium-headless-shell")
+
         command = [
-            "chromium-headless-shell",
+            chromium_path,
             target,
             "--headless",
             f"--screenshot={img_file_path}",
