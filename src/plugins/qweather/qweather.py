@@ -268,7 +268,8 @@ class QWeather(BasePlugin):
         return data['hourly']
 
     def get_air_quality(self, host, api_key, location_id):
-        url = f"{host}/airquality/v1/current/{location_id}"
+        lat, long = location_id.split(',')
+        url = f"{host}/airquality/v1/current/{lat}/{long}"
         params = {
             "key": api_key
         }
@@ -278,12 +279,18 @@ class QWeather(BasePlugin):
             logger.error(f"Failed to get air quality data: {response.content}")
             return {}
 
-        data = response.json()
-        if data.get('code') != '200':
-            logger.error(f"Invalid air quality response: {data}")
-            return {}
+        try:
+            data = response.json()
+            if data.get('indexes') and len(data['indexes']) > 0:
+                cn_mee = data['indexes'][0]
+                return {
+                    'aqi': cn_mee.get('aqi', 'N/A'),
+                    'category': cn_mee.get('category', '')
+                }
+        except Exception as e:
+            logger.error(f"Failed to parse air quality response: {e}")
 
-        return data.get('now', {})
+        return {}
 
     def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'))
