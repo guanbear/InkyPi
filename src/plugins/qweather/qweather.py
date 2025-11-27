@@ -39,6 +39,33 @@ UNITS = {
     }
 }
 
+LABELS = {
+    "zh": {
+        "feels_like": "体感温度",
+        "sunrise": "日出",
+        "sunset": "日落",
+        "wind": "风速",
+        "humidity": "湿度",
+        "pressure": "气压",
+        "uv_index": "紫外线",
+        "visibility": "能见度",
+        "air_quality": "空气质量",
+        "last_refresh": "最后更新"
+    },
+    "en": {
+        "feels_like": "Feels Like",
+        "sunrise": "Sunrise",
+        "sunset": "Sunset",
+        "wind": "Wind",
+        "humidity": "Humidity",
+        "pressure": "Pressure",
+        "uv_index": "UV Index",
+        "visibility": "Visibility",
+        "air_quality": "Air Quality",
+        "last_refresh": "Last refresh"
+    }
+}
+
 QWEATHER_ICON_MAP = {
     "100": "01d",
     "101": "02d",
@@ -131,6 +158,10 @@ class QWeather(BasePlugin):
         if units not in ['metric', 'imperial']:
             raise RuntimeError("Units must be metric or imperial.")
 
+        language = settings.get('language', 'zh')
+        if language not in ['zh', 'en']:
+            language = 'zh'
+
         api_key = device_config.load_env_key("QWEATHER_API_KEY")
         if not api_key:
             raise RuntimeError("QWeather API Key not configured.")
@@ -160,9 +191,11 @@ class QWeather(BasePlugin):
                 air_quality,
                 tz,
                 units,
-                time_format
+                time_format,
+                language
             )
             template_params['title'] = title
+            template_params['labels'] = LABELS[language]
 
         except Exception as e:
             logger.error(f"QWeather request failed: {str(e)}")
@@ -180,6 +213,7 @@ class QWeather(BasePlugin):
         else:
             last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
+        template_params["language"] = language
 
         image = self.render_image(dimensions, "qweather.html", "qweather.css", template_params)
 
@@ -292,7 +326,7 @@ class QWeather(BasePlugin):
 
         return {}
 
-    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format):
+    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format, language="zh"):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'))
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
@@ -307,8 +341,8 @@ class QWeather(BasePlugin):
             "time_format": time_format
         }
 
-        data['forecast'] = self.parse_forecast(daily_forecast, tz)
-        data['data_points'] = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format)
+        data['forecast'] = self.parse_forecast(daily_forecast, tz, language)
+        data['data_points'] = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
         data['hourly_forecast'] = self.parse_hourly(hourly_forecast, tz, time_format, units)
 
         return data
@@ -316,7 +350,7 @@ class QWeather(BasePlugin):
     def map_qweather_icon(self, qweather_icon):
         return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
-    def parse_forecast(self, daily_forecast, tz):
+    def parse_forecast(self, daily_forecast, tz, language="zh"):
         forecast = []
 
         for day in daily_forecast:
@@ -324,7 +358,11 @@ class QWeather(BasePlugin):
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
-            day_label = dt.strftime("%a")
+            if language == "zh":
+                weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+                day_label = weekdays[dt.weekday()]
+            else:
+                day_label = dt.strftime("%a")
 
             target_date = dt.date()
             try:
@@ -380,7 +418,7 @@ class QWeather(BasePlugin):
 
         return hourly
 
-    def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format):
+    def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh"):
         data_points = []
 
         sunrise_str = today_forecast.get('sunrise')
@@ -392,7 +430,7 @@ class QWeather(BasePlugin):
                 tzinfo=tz
             )
             data_points.append({
-                "label": "Sunrise",
+                "label": LABELS[language]["sunrise"],
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunrise.png')
@@ -407,7 +445,7 @@ class QWeather(BasePlugin):
                 tzinfo=tz
             )
             data_points.append({
-                "label": "Sunset",
+                "label": LABELS[language]["sunset"],
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
@@ -415,7 +453,7 @@ class QWeather(BasePlugin):
 
         wind_speed = current_weather.get('windSpeed', '0')
         data_points.append({
-            "label": "Wind",
+            "label": LABELS[language]["wind"],
             "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
             "icon": self.get_plugin_dir('icons/wind.png')
@@ -423,7 +461,7 @@ class QWeather(BasePlugin):
 
         humidity = current_weather.get('humidity', '0')
         data_points.append({
-            "label": "Humidity",
+            "label": LABELS[language]["humidity"],
             "measurement": humidity,
             "unit": '%',
             "icon": self.get_plugin_dir('icons/humidity.png')
@@ -431,7 +469,7 @@ class QWeather(BasePlugin):
 
         pressure = current_weather.get('pressure', '0')
         data_points.append({
-            "label": "Pressure",
+            "label": LABELS[language]["pressure"],
             "measurement": pressure,
             "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
@@ -439,7 +477,7 @@ class QWeather(BasePlugin):
 
         uv_index = today_forecast.get('uvIndex', '0')
         data_points.append({
-            "label": "UV Index",
+            "label": LABELS[language]["uv_index"],
             "measurement": uv_index,
             "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
@@ -448,7 +486,7 @@ class QWeather(BasePlugin):
         visibility = float(current_weather.get('vis', '10'))
         visibility_str = f">{visibility}" if visibility >= 10 else visibility
         data_points.append({
-            "label": "Visibility",
+            "label": LABELS[language]["visibility"],
             "measurement": visibility_str,
             "unit": 'km',
             "icon": self.get_plugin_dir('icons/visibility.png')
@@ -458,7 +496,7 @@ class QWeather(BasePlugin):
             aqi = air_quality.get('aqi', 'N/A')
             aqi_category = air_quality.get('category', '')
             data_points.append({
-                "label": "Air Quality",
+                "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
                 "unit": aqi_category,
                 "icon": self.get_plugin_dir('icons/aqi.png')

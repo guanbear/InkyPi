@@ -21,6 +21,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Clock: Customizable clock faces for displaying time
 - AI Image/Text: Generate images and dynamic text from prompts using OpenAI's models
 - Weather: Display current weather conditions and multi-day forecasts with a customizable layout
+- QWeather: Enhanced weather display with detailed forecasts, air quality, and multi-language support (中文/English)
 - Calendar: Visualize your calendar from Google, Outlook, or Apple Calendar with customizable layouts
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).

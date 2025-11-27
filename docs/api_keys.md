@@ -82,3 +82,16 @@ Required for the GitHub Plugin
     ```
     GITHUB_SECRET=your-key
     ```
+
+## QWeather Key
+
+Required for the QWeather Plugin
+
+- Login or create an account on [QWeather Console](https://console.qweather.com/)
+- Create a new project and get your API Key from [Project Management](https://console.qweather.com/#/apps)
+- The free tier (Developer Plan) allows up to 1,000 requests per day
+- Store your api key in the .env file with the key `QWEATHER_API_KEY`
+    ```
+    QWEATHER_API_KEY=your-key
+    ```
+
