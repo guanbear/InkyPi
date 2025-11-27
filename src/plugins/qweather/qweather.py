@@ -200,10 +200,15 @@ class QWeather(BasePlugin):
         response = requests.get(url, params=params)
 
         if response.status_code != 200:
-            logger.error(f"Failed to retrieve weather data: {response.content}")
+            logger.error(f"Failed to retrieve weather data. Status: {response.status_code}, Content: {response.content}")
             raise RuntimeError("Failed to retrieve weather data.")
 
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON response: {e}, Content: {response.text}")
+            raise RuntimeError("Failed to parse weather data.")
+
         if data.get('code') != '200':
             logger.error(f"Invalid weather response: {data}")
             raise RuntimeError("Failed to get valid weather data.")
@@ -220,10 +225,15 @@ class QWeather(BasePlugin):
         response = requests.get(url, params=params)
 
         if response.status_code != 200:
-            logger.error(f"Failed to retrieve daily forecast: {response.content}")
+            logger.error(f"Failed to retrieve daily forecast. Status: {response.status_code}, Content: {response.content}")
             raise RuntimeError("Failed to retrieve daily forecast.")
 
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON response: {e}, Content: {response.text}")
+            raise RuntimeError("Failed to parse forecast data.")
+
         if data.get('code') != '200':
             logger.error(f"Invalid forecast response: {data}")
             raise RuntimeError("Failed to get valid forecast data.")
@@ -240,10 +250,15 @@ class QWeather(BasePlugin):
         response = requests.get(url, params=params)
 
         if response.status_code != 200:
-            logger.error(f"Failed to retrieve hourly forecast: {response.content}")
+            logger.error(f"Failed to retrieve hourly forecast. Status: {response.status_code}, Content: {response.content}")
             raise RuntimeError("Failed to retrieve hourly forecast.")
 
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse JSON response: {e}, Content: {response.text}")
+            raise RuntimeError("Failed to parse hourly forecast data.")
+
         if data.get('code') != '200':
             logger.error(f"Invalid hourly forecast response: {data}")
             raise RuntimeError("Failed to get valid hourly forecast data.")
