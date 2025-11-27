@@ -188,7 +188,28 @@ class QWeather(BasePlugin):
         return image
 
     def get_location_id(self, host, api_key, lat, long):
-        return f"{lat},{long}"
+        url = f"{host}/v2/city/lookup"
+        params = {
+            "location": f"{long},{lat}",
+            "key": api_key
+        }
+        logger.info(f"Looking up location ID for coordinates: {lat},{long}")
+        response = requests.get(url, params=params)
+
+        if response.status_code != 200:
+            logger.warning(f"Failed to lookup location, using coordinates directly. Status: {response.status_code}")
+            return f"{long},{lat}"
+
+        try:
+            data = response.json()
+            if data.get('code') == '200' and data.get('location') and len(data['location']) > 0:
+                location_id = data['location'][0]['id']
+                logger.info(f"Found location ID: {location_id}")
+                return location_id
+        except Exception as e:
+            logger.warning(f"Failed to parse location lookup response: {e}")
+
+        return f"{long},{lat}"
 
     def get_weather_data(self, host, api_key, location_id, units):
         url = f"{host}/v7/weather/now"
