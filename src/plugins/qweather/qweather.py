@@ -191,8 +191,9 @@ class QWeather(BasePlugin):
         return f"{lat},{long}"
 
     def get_weather_data(self, host, api_key, location_id, units):
-        url = f"{host}/weather/v1/current/{location_id}"
+        url = f"{host}/v7/weather/now"
         params = {
+            "location": location_id,
             "key": api_key,
             "unit": "m" if units == "metric" else "i"
         }
@@ -210,11 +211,11 @@ class QWeather(BasePlugin):
         return data['now']
 
     def get_daily_forecast(self, host, api_key, location_id, units):
-        url = f"{host}/weather/v1/daily/{location_id}"
+        url = f"{host}/v7/weather/7d"
         params = {
+            "location": location_id,
             "key": api_key,
-            "unit": "m" if units == "metric" else "i",
-            "days": 7
+            "unit": "m" if units == "metric" else "i"
         }
         response = requests.get(url, params=params)
 
@@ -230,11 +231,11 @@ class QWeather(BasePlugin):
         return data['daily']
 
     def get_hourly_forecast(self, host, api_key, location_id, units):
-        url = f"{host}/weather/v1/hourly/{location_id}"
+        url = f"{host}/v7/weather/24h"
         params = {
+            "location": location_id,
             "key": api_key,
-            "unit": "m" if units == "metric" else "i",
-            "hours": 24
+            "unit": "m" if units == "metric" else "i"
         }
         response = requests.get(url, params=params)
 
@@ -250,8 +251,9 @@ class QWeather(BasePlugin):
         return data['hourly']
 
     def get_air_quality(self, host, api_key, location_id):
-        url = f"{host}/airquality/v1/current/{location_id}"
+        url = f"{host}/v7/air/now"
         params = {
+            "location": location_id,
             "key": api_key
         }
         response = requests.get(url, params=params)
