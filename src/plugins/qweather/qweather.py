@@ -373,15 +373,15 @@ class QWeather(BasePlugin):
 
         if display_style == "nothing":
             pixel_icon_map = {
-                "01d": "hl",
-                "02d": "97",
-                "03d": "Hx",
-                "04d": "Hx",
-                "09d": "uu",
-                "10d": "xc",
-                "11d": "_F",
-                "13d": "nt",
-                "50d": "p8"
+                "01d": "hl",      # 晴天 -> 太阳
+                "02d": "97",      # 少云 -> 太阳+少云
+                "03d": "Pf",      # 多云 -> 云
+                "04d": "Hx",      # 阴天 -> 厚云
+                "09d": "uu",      # 大雨 -> 云+大雨
+                "10d": "xc",      # 雨 -> 云+雨
+                "11d": "gk",      # 雷暴 -> 云+闪电
+                "13d": "nt",      # 雪 -> 云+雪
+                "50d": "p8"       # 雾/霾 -> 雾
             }
             pixel_icon = pixel_icon_map.get(base_icon, "hl")
             return f"pixel/{pixel_icon}"
