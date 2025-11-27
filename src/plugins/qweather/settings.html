@@ -155,32 +155,32 @@
 
         if (loadPluginSettings) {
             document.getElementById('qweatherHost').value = pluginSettings.qweatherHost || '';
-            document.getElementById('latitude').value = pluginSettings.latitude;
-            document.getElementById('longitude').value = pluginSettings.longitude;
-            document.getElementById('units').value = pluginSettings.units;
+            document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
+            document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
+            document.getElementById('units').value = pluginSettings.units || 'metric';
             document.getElementById('language').value = pluginSettings.language || 'zh';
             document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
             document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
 
             document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === 'true' || pluginSettings.displayRefreshTime === true;
-            document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime || 'true';
+            document.getElementById('displayRefreshTime').value = (pluginSettings.displayRefreshTime !== undefined && pluginSettings.displayRefreshTime !== null) ? pluginSettings.displayRefreshTime : 'true';
 
             document.getElementById('displayMetrics').checked = pluginSettings.displayMetrics === 'true' || pluginSettings.displayMetrics === true;
-            document.getElementById('displayMetrics').value = pluginSettings.displayMetrics || 'true';
+            document.getElementById('displayMetrics').value = (pluginSettings.displayMetrics !== undefined && pluginSettings.displayMetrics !== null) ? pluginSettings.displayMetrics : 'true';
 
             document.getElementById('displayGraph').checked = pluginSettings.displayGraph === 'true' || pluginSettings.displayGraph === true;
-            document.getElementById('displayGraph').value = pluginSettings.displayGraph || 'true';
+            document.getElementById('displayGraph').value = (pluginSettings.displayGraph !== undefined && pluginSettings.displayGraph !== null) ? pluginSettings.displayGraph : 'true';
 
             document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
-            document.getElementById('displayRain').value = pluginSettings.displayRain || 'true';
+            document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
 
             document.getElementById('displayForecast').checked = pluginSettings.displayForecast === 'true' || pluginSettings.displayForecast === true;
-            document.getElementById('displayForecast').value = pluginSettings.displayForecast || 'true';
+            document.getElementById('displayForecast').value = (pluginSettings.displayForecast !== undefined && pluginSettings.displayForecast !== null) ? pluginSettings.displayForecast : 'true';
 
-            document.getElementById('forecastDays').value = pluginSettings.forecastDays;
+            document.getElementById('forecastDays').value = pluginSettings.forecastDays || 7;
 
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase === 'true' || pluginSettings.moonPhase === true;
-            document.getElementById('moonPhase').value = pluginSettings.moonPhase || 'false';
+            document.getElementById('moonPhase').value = (pluginSettings.moonPhase !== undefined && pluginSettings.moonPhase !== null) ? pluginSettings.moonPhase : 'false';
 
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {
