@@ -162,6 +162,10 @@ class QWeather(BasePlugin):
         if language not in ['zh', 'en']:
             language = 'zh'
 
+        theme_mode = settings.get('themeMode', 'light')
+        if theme_mode not in ['light', 'dark', 'auto']:
+            theme_mode = 'light'
+
         api_key = device_config.load_env_key("QWEATHER_API_KEY")
         if not api_key:
             raise RuntimeError("QWeather API Key not configured.")
@@ -184,7 +188,7 @@ class QWeather(BasePlugin):
             if not title:
                 title = weather_data.get('location_name', '')
 
-            template_params = self.parse_weather_data(
+            template_params, sunrise_dt, sunset_dt = self.parse_weather_data(
                 weather_data,
                 daily_forecast,
                 hourly_forecast,
@@ -196,6 +200,9 @@ class QWeather(BasePlugin):
             )
             template_params['title'] = title
             template_params['labels'] = LABELS[language]
+
+            is_dark_mode = self.determine_theme(theme_mode, sunrise_dt, sunset_dt, tz)
+            template_params['dark_mode'] = is_dark_mode
 
         except Exception as e:
             logger.error(f"QWeather request failed: {str(e)}")
@@ -350,10 +357,10 @@ class QWeather(BasePlugin):
         }
 
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language)
-        data['data_points'] = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
+        data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
         data['hourly_forecast'] = self.parse_hourly(hourly_forecast, tz, time_format, units)
 
-        return data
+        return data, sunrise_dt, sunset_dt
 
     def map_qweather_icon(self, qweather_icon):
         return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
@@ -428,6 +435,8 @@ class QWeather(BasePlugin):
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh"):
         data_points = []
+        sunrise_dt = None
+        sunset_dt = None
 
         sunrise_str = today_forecast.get('sunrise')
         if sunrise_str:
@@ -510,7 +519,7 @@ class QWeather(BasePlugin):
                 "icon": self.get_plugin_dir('icons/aqi.png')
             })
 
-        return data_points
+        return data_points, sunrise_dt, sunset_dt
 
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         if time_format == "24h":
@@ -522,3 +531,15 @@ class QWeather(BasePlugin):
             fmt = "%-I" if hour_only else "%-I:%M"
 
         return dt.strftime(fmt).lstrip("0")
+
+    def determine_theme(self, theme_mode, sunrise_dt, sunset_dt, tz):
+        if theme_mode == "light":
+            return False
+        elif theme_mode == "dark":
+            return True
+        elif theme_mode == "auto":
+            if sunrise_dt and sunset_dt:
+                now = datetime.now(tz)
+                return now < sunrise_dt or now >= sunset_dt
+            return False
+        return False

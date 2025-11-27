@@ -8,7 +8,7 @@
 <div id="units-container" data-units="{{ units }}"></div>
 
 
-<div class="weather-dashboard">
+<div class="weather-dashboard {% if dark_mode %}dark-mode{% endif %}">
   {% if plugin_settings.displayRefreshTime == "true" %}
   <div class="last-refresh">{{ labels.last_refresh }}: {{ last_refresh_time }}</div>
   {% endif %}

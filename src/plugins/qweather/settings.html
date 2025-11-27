@@ -44,6 +44,15 @@
 </div>
 
 <div class="form-group">
+    <label for="themeMode" class="form-label">Theme Mode:</label>
+    <select id="themeMode" name="themeMode" class="form-input">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="auto">Auto (based on sunrise/sunset)</option>
+    </select>
+</div>
+
+<div class="form-group">
     <label class="form-label">Title:</label>
     <input type="text" id="customTitle" name="customTitle" class="form-input" placeholder="留空则显示城市名称" />
 </div>
@@ -142,6 +151,7 @@
             document.getElementById('longitude').value = pluginSettings.longitude;
             document.getElementById('units').value = pluginSettings.units;
             document.getElementById('language').value = pluginSettings.language || 'zh';
+            document.getElementById('themeMode').value = pluginSettings.themeMode || 'light';
 
             document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime;
             document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime;
@@ -170,6 +180,7 @@
             document.getElementById('longitude').value = '116.4074';
             document.getElementById('units').value = "metric";
             document.getElementById('language').value = "zh";
+            document.getElementById('themeMode').value = "light";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
             document.getElementById('displayMetrics').checked = true;
