@@ -268,7 +268,7 @@ class QWeather(BasePlugin):
         return data['hourly']
 
     def get_air_quality(self, host, api_key, location_id):
-        lat, long = location_id.split(',')
+        long, lat = location_id.split(',')
         url = f"{host}/airquality/v1/current/{lat}/{long}"
         params = {
             "key": api_key
