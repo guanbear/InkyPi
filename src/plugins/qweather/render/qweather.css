@@ -36,6 +36,36 @@
   border-top-color: #666;
 }
 
+/* Nothing Weather (Pixel) Style */
+.weather-dashboard.nothing-style {
+  font-family: "Dogica", monospace;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.weather-dashboard.nothing-style .current-icon,
+.weather-dashboard.nothing-style .forecast-icon,
+.weather-dashboard.nothing-style .data-point-icon,
+.weather-dashboard.nothing-style .moon-phase-icon {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.weather-dashboard.nothing-style .title,
+.weather-dashboard.nothing-style .current-date,
+.weather-dashboard.nothing-style .current-temp,
+.weather-dashboard.nothing-style .feels-like,
+.weather-dashboard.nothing-style .min-max,
+.weather-dashboard.nothing-style .data-point-label,
+.weather-dashboard.nothing-style .data-point-measurement,
+.weather-dashboard.nothing-style .forecast-day-name,
+.weather-dashboard.nothing-style .forecast-temps {
+  font-family: "Dogica", monospace;
+  letter-spacing: 0.1em;
+}
+
 .header {
   height: 15dvh;
   width: 100%;

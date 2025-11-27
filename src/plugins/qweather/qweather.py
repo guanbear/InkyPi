@@ -166,6 +166,10 @@ class QWeather(BasePlugin):
         if theme_mode not in ['light', 'dark', 'auto']:
             theme_mode = 'light'
 
+        display_style = settings.get('displayStyle', 'default')
+        if display_style not in ['default', 'nothing']:
+            display_style = 'default'
+
         api_key = device_config.load_env_key("QWEATHER_API_KEY")
         if not api_key:
             raise RuntimeError("QWeather API Key not configured.")
@@ -196,13 +200,15 @@ class QWeather(BasePlugin):
                 tz,
                 units,
                 time_format,
-                language
+                language,
+                display_style
             )
             template_params['title'] = title
             template_params['labels'] = LABELS[language]
 
             is_dark_mode = self.determine_theme(theme_mode, sunrise_dt, sunset_dt, tz)
             template_params['dark_mode'] = is_dark_mode
+            template_params['display_style'] = display_style
 
         except Exception as e:
             logger.error(f"QWeather request failed: {str(e)}")
@@ -333,8 +339,8 @@ class QWeather(BasePlugin):
 
         return {}
 
-    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format, language="zh"):
-        current_icon = self.map_qweather_icon(weather_data.get('icon', '100'))
+    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
+        current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
 
@@ -356,20 +362,37 @@ class QWeather(BasePlugin):
             "time_format": time_format
         }
 
-        data['forecast'] = self.parse_forecast(daily_forecast, tz, language)
+        data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
         data['hourly_forecast'] = self.parse_hourly(hourly_forecast, tz, time_format, units)
 
         return data, sunrise_dt, sunset_dt
 
-    def map_qweather_icon(self, qweather_icon):
-        return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
+    def map_qweather_icon(self, qweather_icon, display_style="default"):
+        base_icon = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
-    def parse_forecast(self, daily_forecast, tz, language="zh"):
+        if display_style == "nothing":
+            pixel_icon_map = {
+                "01d": "hl",
+                "02d": "97",
+                "03d": "Hx",
+                "04d": "Hx",
+                "09d": "uu",
+                "10d": "xc",
+                "11d": "_F",
+                "13d": "nt",
+                "50d": "p8"
+            }
+            pixel_icon = pixel_icon_map.get(base_icon, "hl")
+            return f"pixel/{pixel_icon}"
+
+        return base_icon
+
+    def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default"):
         forecast = []
 
         for day in daily_forecast:
-            weather_icon = self.map_qweather_icon(day.get('iconDay', '100'))
+            weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
