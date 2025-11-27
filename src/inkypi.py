@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='InkyPi Display Server')
 parser.add_argument('--dev', action='store_true', help='Run in development mode')
+parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0, use 127.0.0.1 for localhost only)')
 args = parser.parse_args()
 
 # Set development mode settings
@@ -110,6 +111,6 @@ if __name__ == '__main__':
             except:
                 pass  # Ignore if we can't get the IP
             
-        serve(app, host="0.0.0.0", port=PORT, threads=1)
+        serve(app, host=args.host, port=PORT, threads=1)
     finally:
         refresh_task.stop()
