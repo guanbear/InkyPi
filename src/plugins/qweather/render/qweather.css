@@ -147,7 +147,7 @@
 }
 
 .data-point-label {
-  font-size: min(32cqh, 15cqi);
+  font-size: min(28cqh, 12cqi);
   text-align: center;
   font-weight: lighter;
   height: 30%

@@ -331,8 +331,16 @@ class QWeather(BasePlugin):
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
 
+        if language == "zh":
+            now = datetime.now(tz)
+            weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+            months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+            current_date = f"{weekdays[now.weekday()]}, {months[now.month - 1]} {now.day}日"
+        else:
+            current_date = datetime.now(tz).strftime("%A, %B %d")
+
         data = {
-            "current_date": datetime.now(tz).strftime("%A, %B %d"),
+            "current_date": current_date,
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
