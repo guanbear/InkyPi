@@ -197,11 +197,13 @@ class QWeather(BasePlugin):
             "key": api_key,
             "unit": "m" if units == "metric" else "i"
         }
+        logger.info(f"Requesting weather data from: {url} with params: {params}")
         response = requests.get(url, params=params)
+        logger.info(f"Response status: {response.status_code}")
 
         if response.status_code != 200:
             logger.error(f"Failed to retrieve weather data. Status: {response.status_code}, Content: {response.content}")
-            raise RuntimeError("Failed to retrieve weather data.")
+            raise RuntimeError(f"Failed to retrieve weather data. Status: {response.status_code}")
 
         try:
             data = response.json()
