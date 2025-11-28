@@ -554,14 +554,25 @@ class QWeather(BasePlugin):
 
                 matching_hourly = next((h for h in hourly_data if h['time'] == self.format_time(hour_time, time_format, hour_only=True)), None)
                 temp = matching_hourly['temperature'] if matching_hourly else None
+                precip_prob = matching_hourly['precipitation'] if matching_hourly else 0.0
 
                 if temp is None and hourly_data:
                     temp = hourly_data[0]['temperature']
 
+                if total_precip > 0 and precip_prob == 0:
+                    if total_precip >= 2.5:
+                        precip_prob = 0.9
+                    elif total_precip >= 1.0:
+                        precip_prob = 0.7
+                    elif total_precip >= 0.1:
+                        precip_prob = 0.5
+                    else:
+                        precip_prob = 0.3
+
                 merged.append({
                     "time": self.format_time(hour_time, time_format, hour_only=True),
                     "temperature": temp,
-                    "precipitation": 1.0 if total_precip > 0 else 0.0,
+                    "precipitation": precip_prob,
                     "rain": round(total_precip, 2)
                 })
 
