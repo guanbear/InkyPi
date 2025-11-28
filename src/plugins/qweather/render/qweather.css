@@ -235,7 +235,8 @@
   border-radius: 1.2vw;
   min-width: 0;
   max-height: 100%;
-  gap: 0.5dvh
+  gap: 0.5dvh;
+  position: relative;
 }
 
 .forecast-day-name {
@@ -444,18 +445,20 @@
 
 /* Apple-Style Temperature Bars */
 .temp-bar-container {
-  width: 100%;
-  height: 8dvh;
+  position: absolute;
+  right: 4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0.5dvh 0;
+  align-items: stretch;
+  pointer-events: none;
 }
 
 .temp-bar {
-  width: 4px;
+  width: 100%;
   height: 100%;
-  background: rgba(200, 200, 200, 0.3);
+  background: rgba(200, 200, 200, 0.2);
   border-radius: 2px;
   position: relative;
   overflow: visible;
