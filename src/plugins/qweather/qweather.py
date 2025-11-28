@@ -256,20 +256,29 @@ class QWeather(BasePlugin):
 
     def get_location_name(self, host, api_key, lat, long):
         """Get location name from coordinates using QWeather GeoAPI"""
+        # Format coordinates to 2 decimal places as required by QWeather API
+        lat_formatted = f"{float(lat):.2f}"
+        long_formatted = f"{float(long):.2f}"
+
         url = f"{host}/v2/city/lookup"
         params = {
-            "location": f"{long},{lat}",
+            "location": f"{long_formatted},{lat_formatted}",
             "key": api_key
         }
+        logger.info(f"Requesting location name from: {url} with location: {params['location']}")
         try:
             response = requests.get(url, params=params, timeout=10)
+            logger.info(f"Location API response status: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
+                logger.info(f"Location API response: {data}")
                 if data.get('code') == '200' and data.get('location'):
                     # Get the first location result
                     loc = data['location'][0]
                     # Return city name, fallback to district or country
-                    return loc.get('name', '') or loc.get('adm2', '') or loc.get('country', '')
+                    location_name = loc.get('name', '') or loc.get('adm2', '') or loc.get('country', '')
+                    logger.info(f"Found location name: {location_name}")
+                    return location_name
         except Exception as e:
             logger.warning(f"Failed to get location name: {e}")
         return ""
