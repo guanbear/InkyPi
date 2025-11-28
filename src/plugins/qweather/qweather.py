@@ -180,7 +180,6 @@ class QWeather(BasePlugin):
         title = settings.get('customTitle', '')
 
         mock_alert_headline = settings.get('mockAlertHeadline', '')
-        mock_alert_description = settings.get('mockAlertDescription', '')
         mock_alert_severity = settings.get('mockAlertSeverity', '')
 
         if mock_alert_headline and not mock_alert_severity:
@@ -203,7 +202,7 @@ class QWeather(BasePlugin):
 
             if mock_alert_headline:
                 logger.info(f"Using mock weather alert: {mock_alert_headline}, severity: {mock_alert_severity}")
-                weather_alerts = self.create_mock_alert(mock_alert_headline, mock_alert_description, mock_alert_severity)
+                weather_alerts = self.create_mock_alert(mock_alert_headline, '', mock_alert_severity)
                 logger.info(f"Mock weather alerts created: {weather_alerts}")
 
             if not title:

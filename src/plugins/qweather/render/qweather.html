@@ -16,7 +16,6 @@
   <div class="header {% if weather_alerts and weather_alerts|length > 0 %}has-alerts{% endif %}">
     <div class="title">{{ title }}</div>
     <div class="header-bottom-row">
-      <div class="current-date">{{ current_date }}</div>
       {% if weather_alerts and weather_alerts|length > 0 %}
       <div class="weather-alerts-inline">
         {% for alert in weather_alerts %}
@@ -27,6 +26,7 @@
         {% endfor %}
       </div>
       {% endif %}
+      <div class="current-date">{{ current_date }}</div>
     </div>
   </div>
 

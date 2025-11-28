@@ -60,9 +60,6 @@
         <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="Alert headline (leave empty for real alerts)" />
     </div>
     <div class="form-group">
-        <textarea id="mockAlertDescription" name="mockAlertDescription" class="form-input" rows="2" placeholder="Alert description"></textarea>
-    </div>
-    <div class="form-group">
         <span id="severityLabel">Severity:</span>
         <select id="mockAlertSeverity" name="mockAlertSeverity" class="form-input">
             <option value="">None (Use Real)</option>
@@ -150,7 +147,6 @@
             titlePlaceholder: 'Leave empty to show city name',
             debugLabel: '🐛 Debug Weather Alert',
             alertHeadlinePlaceholder: 'Alert headline (leave empty for real alerts)',
-            alertDescriptionPlaceholder: 'Alert description',
             severityLabel: 'Severity:',
             severityNone: 'None (Use Real)',
             severityMinor: 'Minor',
@@ -187,7 +183,6 @@
             titlePlaceholder: '留空则显示城市名称',
             debugLabel: '🐛 调试天气预警',
             alertHeadlinePlaceholder: '预警标题（留空使用真实预警）',
-            alertDescriptionPlaceholder: '预警描述',
             severityLabel: '严重程度:',
             severityNone: '无（使用真实）',
             severityMinor: '轻微',
@@ -222,7 +217,6 @@
         document.getElementById('customTitle').placeholder = t.titlePlaceholder;
         document.getElementById('debugLabel').textContent = t.debugLabel;
         document.getElementById('mockAlertHeadline').placeholder = t.alertHeadlinePlaceholder;
-        document.getElementById('mockAlertDescription').placeholder = t.alertDescriptionPlaceholder;
         document.getElementById('severityLabel').textContent = t.severityLabel;
         document.getElementById('displayLabel').textContent = t.displayLabel;
         document.getElementById('refreshTimeLabel').textContent = t.refreshTimeLabel;
@@ -333,7 +327,6 @@
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
 
             document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
-            document.getElementById('mockAlertDescription').value = pluginSettings.mockAlertDescription || '';
             document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
 
             // Update language UI
@@ -363,7 +356,6 @@
             document.getElementById('customTitle').value = '';
 
             document.getElementById('mockAlertHeadline').value = '';
-            document.getElementById('mockAlertDescription').value = '';
             document.getElementById('mockAlertSeverity').value = '';
 
             // Initialize with English
