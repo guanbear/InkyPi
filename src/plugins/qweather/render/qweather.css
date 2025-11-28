@@ -75,6 +75,13 @@
   container-type: size;
 }
 
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5dvh;
+}
+
 .last-refresh {
   position: absolute;
   top: 0.5dvh;
@@ -105,6 +112,37 @@
   align-content: end;
   width: 100%;
   line-height: 105%;
+}
+
+/* Inline Weather Alerts */
+.weather-alerts-inline {
+  display: flex;
+  flex-direction: row;
+  gap: 1vw;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.weather-alert-inline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5dvh 1.5vw;
+  border-radius: 0.5vw;
+  gap: 0.8vw;
+  font-size: min(2.2dvh, 2.2vw);
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  animation: alertPulse 2s ease-in-out infinite;
+}
+
+.alert-icon-inline {
+  font-size: min(2.5dvh, 2.5vw);
+  line-height: 1;
+}
+
+.alert-headline-inline {
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .today-container {
