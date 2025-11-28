@@ -179,6 +179,10 @@ class QWeather(BasePlugin):
         host = settings.get('qweatherHost') or device_config.load_env_key("QWEATHER_HOST") or 'https://devapi.qweather.com'
         title = settings.get('customTitle', '')
 
+        mock_alert_headline = settings.get('mockAlertHeadline', '')
+        mock_alert_description = settings.get('mockAlertDescription', '')
+        mock_alert_severity = settings.get('mockAlertSeverity', '')
+
         timezone = device_config.get_config("timezone", default="Asia/Shanghai")
         time_format = device_config.get_config("time_format", default="24h")
         tz = pytz.timezone(timezone)
@@ -192,6 +196,10 @@ class QWeather(BasePlugin):
             hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
             air_quality = self.get_air_quality(host, api_key, location_id)
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
+
+            if mock_alert_headline and mock_alert_severity:
+                logger.info("Using mock weather alert")
+                weather_alerts = self.create_mock_alert(mock_alert_headline, mock_alert_description, mock_alert_severity)
 
             if not title:
                 title = weather_data.get('location_name', '')
@@ -390,6 +398,16 @@ class QWeather(BasePlugin):
             logger.error(f"Failed to parse weather alerts response: {e}")
 
         return []
+
+    def create_mock_alert(self, headline, description, severity):
+        return [{
+            'headline': headline,
+            'description': description,
+            'severity': severity,
+            'eventType': {'name': headline},
+            'issuedTime': datetime.now().isoformat(),
+            'expireTime': (datetime.now() + timedelta(hours=24)).isoformat()
+        }]
 
     def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default"):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)

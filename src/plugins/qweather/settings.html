@@ -66,6 +66,26 @@
 </div>
 
 <div class="form-group">
+    <label class="form-label">Mock Weather Alert (留空使用真实预警):</label>
+    <div class="form-group">
+        <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="预警标题，例如：暴雨橙色预警" />
+    </div>
+    <div class="form-group">
+        <textarea id="mockAlertDescription" name="mockAlertDescription" class="form-input" rows="3" placeholder="预警描述，例如：预计未来6小时内将出现50毫米以上降水"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="mockAlertSeverity" class="form-label">Severity:</label>
+        <select id="mockAlertSeverity" name="mockAlertSeverity" class="form-input">
+            <option value="">None (Use Real)</option>
+            <option value="minor">Minor (轻微)</option>
+            <option value="moderate">Moderate (中等)</option>
+            <option value="severe">Severe (严重)</option>
+            <option value="extreme">Extreme (极端)</option>
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
     <label for="displayMetrics" class="form-label">Display: </label>
 
     <div class="form-group">
@@ -191,6 +211,9 @@
             document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'false';
 
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
+            document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
+            document.getElementById('mockAlertDescription').value = pluginSettings.mockAlertDescription || '';
+            document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
         } else {
             document.getElementById('qweatherHost').value = '';
             document.getElementById('latitude').value = '39.9042';
