@@ -459,7 +459,7 @@ class QWeather(BasePlugin):
         current_time = datetime.now(tz)
 
         for hour in hourly_forecast[:24]:
-            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=pytz.UTC).astimezone(tz)
+            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
 
             if dt < current_time:
                 continue
