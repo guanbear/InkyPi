@@ -3,7 +3,12 @@
 # set up logging
 import os, logging.config
 
-from pi_heif import register_heif_opener
+try:
+    from pi_heif import register_heif_opener
+    HEIF_AVAILABLE = True
+except ImportError:
+    HEIF_AVAILABLE = False
+    logging.warning("pi_heif not available, HEIF/HEIC image support disabled")
 
 logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
 
@@ -81,7 +86,11 @@ app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 
 # Register opener for HEIF/HEIC images
-register_heif_opener()
+if HEIF_AVAILABLE:
+    register_heif_opener()
+    logger.info("HEIF/HEIC image support enabled")
+else:
+    logger.info("HEIF/HEIC image support disabled (pi_heif not installed)")
 
 if __name__ == '__main__':
 
