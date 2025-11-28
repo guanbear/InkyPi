@@ -72,7 +72,7 @@
   <!-- Forecast Row -->
   {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
   <div class="forecast">
-    {% for day in forecast[1:(plugin_settings.forecastDays | int) + 1] %}
+    {% for day in forecast[0:(plugin_settings.forecastDays | int)] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
@@ -154,7 +154,11 @@
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
 	const threshold = isImperial ? 0.0035 : 0.09;
-	
+
+	// Sunrise and sunset times
+	const sunriseTime = "{{ sunrise_time|default('') }}";
+	const sunsetTime = "{{ sunset_time|default('') }}";
+
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
@@ -176,9 +180,9 @@
             const y = bar.y;
 			const base = bar.base;
 			const height = base - y;
-			
+
 			let textY, unitY;
-			
+
 			if (height < 25) {
 			  textY = y - 10;
 			  unitY = y - 3;
@@ -188,9 +192,79 @@
 			}
             ctx.fillStyle = "{{ plugin_settings.textColor }}";
             ctx.fillText(rainAmount.toFixed(2), x, textY);
-            ctx.fillText(unit, x, unitY); 
+            ctx.fillText(unit, x, unitY);
           }
         });
+
+        ctx.restore();
+      }
+    });
+
+    Chart.register({
+      id: 'sunriseSunset',
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx } = chart;
+        const { sunrise, sunset, labels } = pluginOptions;
+
+        if (!sunrise && !sunset) return;
+
+        const chartArea = chart.chartArea;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+
+        ctx.save();
+
+        // Draw sunrise
+        if (sunrise) {
+          const sunriseIndex = labels.indexOf(sunrise);
+          if (sunriseIndex !== -1) {
+            const x = xScale.getPixelForValue(sunriseIndex);
+            const yTop = chartArea.top;
+            const yBottom = chartArea.bottom;
+
+            // Draw vertical line
+            ctx.strokeStyle = 'rgba(255, 160, 0, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(x, yTop);
+            ctx.lineTo(x, yBottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw icon (using emoji as placeholder)
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'rgba(255, 160, 0, 0.9)';
+            ctx.textAlign = 'center';
+            ctx.fillText('🌅', x, yTop - 5);
+          }
+        }
+
+        // Draw sunset
+        if (sunset) {
+          const sunsetIndex = labels.indexOf(sunset);
+          if (sunsetIndex !== -1) {
+            const x = xScale.getPixelForValue(sunsetIndex);
+            const yTop = chartArea.top;
+            const yBottom = chartArea.bottom;
+
+            // Draw vertical line
+            ctx.strokeStyle = 'rgba(255, 100, 50, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(x, yTop);
+            ctx.lineTo(x, yBottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw icon (using emoji as placeholder)
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'rgba(255, 100, 50, 0.9)';
+            ctx.textAlign = 'center';
+            ctx.fillText('🌇', x, yTop - 5);
+          }
+        }
 
         ctx.restore();
       }
@@ -296,8 +370,9 @@
         plugins: {
           legend: { display: false },
 		  {% if plugin_settings.displayRain == "true" %}
-			annotationRain: { precipitationData: rain }
+			annotationRain: { precipitationData: rain },
 	      {% endif %}
+		  sunriseSunset: { sunrise: sunriseTime, sunset: sunsetTime, labels: labels }
         },
         elements: {
           line: {

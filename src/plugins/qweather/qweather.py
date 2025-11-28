@@ -438,6 +438,14 @@ class QWeather(BasePlugin):
         data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
+        # Add sunrise/sunset times for chart
+        if sunrise_dt:
+            data['sunrise_time'] = self.format_time(sunrise_dt, time_format, hour_only=True)
+            data['sunrise_icon'] = self.get_plugin_dir('icons/sunrise.png')
+        if sunset_dt:
+            data['sunset_time'] = self.format_time(sunset_dt, time_format, hour_only=True)
+            data['sunset_icon'] = self.get_plugin_dir('icons/sunset.png')
+
         if data['forecast']:
             forecast_temps = []
             for day in data['forecast']:
@@ -473,13 +481,17 @@ class QWeather(BasePlugin):
 
     def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default"):
         forecast = []
+        today = datetime.now(tz).date()
 
-        for day in daily_forecast:
+        for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
-            if language == "zh":
+
+            if dt.date() == today:
+                day_label = "今天" if language == "zh" else "Today"
+            elif language == "zh":
                 weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
                 day_label = weekdays[dt.weekday()]
             else:
