@@ -84,6 +84,13 @@
           <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> /
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
+        {% if plugin_settings.temperatureBars and plugin_settings.temperatureBars == "true" %}
+        <div class="temp-bar-container">
+          <div class="temp-bar" data-high="{{ day.high }}" data-low="{{ day.low }}" data-global-max="{{ forecast_temp_max }}" data-global-min="{{ forecast_temp_min }}">
+            <div class="temp-bar-fill"></div>
+          </div>
+        </div>
+        {% endif %}
         {% if plugin_settings.moonPhase and plugin_settings.moonPhase == "true" %}
         <div class="separator"></div>
         <div class="moon-phase-container">
@@ -101,6 +108,43 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+
+    const tempBars = document.querySelectorAll('.temp-bar');
+    if (tempBars.length > 0) {
+      tempBars.forEach(bar => {
+        const high = parseFloat(bar.dataset.high);
+        const low = parseFloat(bar.dataset.low);
+        const globalMax = parseFloat(bar.dataset.globalMax);
+        const globalMin = parseFloat(bar.dataset.globalMin);
+        const tempRange = globalMax - globalMin;
+
+        if (tempRange > 0) {
+          const topPercent = ((globalMax - high) / tempRange) * 100;
+          const bottomPercent = ((globalMax - low) / tempRange) * 100;
+          const heightPercent = bottomPercent - topPercent;
+
+          const fill = bar.querySelector('.temp-bar-fill');
+          fill.style.top = topPercent + '%';
+          fill.style.height = heightPercent + '%';
+
+          const avgTemp = (high + low) / 2;
+          let color;
+          if (avgTemp >= 30) {
+            color = 'linear-gradient(to bottom, #FF6B6B, #FF8E53)';
+          } else if (avgTemp >= 20) {
+            color = 'linear-gradient(to bottom, #FFB84D, #FFA500)';
+          } else if (avgTemp >= 10) {
+            color = 'linear-gradient(to bottom, #4ECDC4, #44A08D)';
+          } else if (avgTemp >= 0) {
+            color = 'linear-gradient(to bottom, #5DADE2, #3498DB)';
+          } else {
+            color = 'linear-gradient(to bottom, #A7C7E7, #6C8EBF)';
+          }
+          fill.style.background = color;
+        }
+      });
+    }
+
     const canvas = document.getElementById('hourlyTemperatureChart');
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();

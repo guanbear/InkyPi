@@ -419,6 +419,17 @@ class QWeather(BasePlugin):
         data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
+        if data['forecast']:
+            forecast_temps = []
+            for day in data['forecast']:
+                forecast_temps.append(day['high'])
+                forecast_temps.append(day['low'])
+            data['forecast_temp_max'] = max(forecast_temps) if forecast_temps else 0
+            data['forecast_temp_min'] = min(forecast_temps) if forecast_temps else 0
+        else:
+            data['forecast_temp_max'] = 0
+            data['forecast_temp_min'] = 0
+
         return data, sunrise_dt, sunset_dt
 
     def map_qweather_icon(self, qweather_icon, display_style="default"):
