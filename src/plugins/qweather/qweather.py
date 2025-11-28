@@ -289,8 +289,22 @@ class QWeather(BasePlugin):
                 logger.info(f"Location API response: {data}")
                 if data.get('code') == '200' and data.get('location') and len(data['location']) > 0:
                     loc = data['location'][0]
-                    # Return city name, fallback to district or country
-                    location_name = loc.get('adm2', '') or loc.get('name', '') or loc.get('adm1', '') or loc.get('country', '')
+                    # Build location name from name, adm2, adm1
+                    # Example: "东城 北京 北京市" or "Beijing Beijing"
+                    parts = []
+                    name = loc.get('name', '')
+                    adm2 = loc.get('adm2', '')
+                    adm1 = loc.get('adm1', '')
+
+                    # Add unique parts (avoid duplication)
+                    if name and name not in parts:
+                        parts.append(name)
+                    if adm2 and adm2 not in parts and adm2 != name:
+                        parts.append(adm2)
+                    if adm1 and adm1 not in parts and adm1 != adm2:
+                        parts.append(adm1)
+
+                    location_name = ' '.join(parts) if parts else loc.get('country', '')
                     logger.info(f"Found location name: {location_name}")
                     return location_name
                 else:
