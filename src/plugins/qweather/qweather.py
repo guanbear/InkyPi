@@ -227,7 +227,7 @@ class QWeather(BasePlugin):
                 time_format,
                 language,
                 display_style,
-                plugin_settings
+                settings
             )
             template_params['title'] = title
             template_params['labels'] = LABELS[language]
