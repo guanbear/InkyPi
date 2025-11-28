@@ -44,18 +44,18 @@
   image-rendering: crisp-edges;
 }
 
-/* E-Ink Style - Optimized for E6 Color E-ink Display (800x480) */
-.weather-dashboard.eink-style {
+/* QWeather Style - Optimized for E6 Color E-ink Display (800x480) */
+.weather-dashboard.qweather-style {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* E-Ink icon rendering - SVG icons */
-.weather-dashboard.eink-style .current-icon,
-.weather-dashboard.eink-style .forecast-icon,
-.weather-dashboard.eink-style .data-point-icon {
+/* QWeather icon rendering - SVG icons */
+.weather-dashboard.qweather-style .current-icon,
+.weather-dashboard.qweather-style .forecast-icon,
+.weather-dashboard.qweather-style .data-point-icon {
   image-rendering: auto;
   filter: contrast(1.2) saturate(1.3);
 }

@@ -169,7 +169,7 @@ class QWeather(BasePlugin):
             theme_mode = 'light'
 
         display_style = settings.get('displayStyle', 'default')
-        if display_style not in ['default', 'nothing', 'eink']:
+        if display_style not in ['default', 'nothing', 'qweather']:
             display_style = 'default'
 
         api_key = device_config.load_env_key("QWEATHER_API_KEY")
@@ -490,7 +490,7 @@ class QWeather(BasePlugin):
 
         data = {
             "current_date": current_date,
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png' if display_style != "eink" else f'icons/{current_icon}'),
+            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png' if display_style != "qweather" else f'icons/{current_icon}'),
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
             "temperature_unit": UNITS[units]["temperature"],
@@ -527,10 +527,10 @@ class QWeather(BasePlugin):
         Returns:
             Icon file path relative to plugin directory
         """
-        # For eink style, use QWeather official SVG icons directly
-        if display_style == "eink":
+        # For qweather style, use QWeather official SVG icons directly
+        if display_style == "qweather":
             # QWeather icon codes are used as-is for SVG files
-            return f"eink/{qweather_icon}.svg"
+            return f"qweather/{qweather_icon}"
         
         # For nothing style, map to pixel icons
         if display_style == "nothing":
@@ -559,7 +559,7 @@ class QWeather(BasePlugin):
 
         for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png" if display_style != "eink" else f"icons/{weather_icon}")
+            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png" if display_style != "qweather" else f"icons/{weather_icon}")
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
 
@@ -583,7 +583,7 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png" if display_style != "eink" else f"icons/{phase_name}")
+            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png" if display_style != "qweather" else f"icons/{phase_name}")
 
             forecast.append({
                 "day": day_label,
