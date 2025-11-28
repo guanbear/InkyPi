@@ -446,9 +446,9 @@
 /* Apple-Style Temperature Bars */
 .temp-bar-container {
   position: absolute;
-  right: 4px;
-  top: 0;
-  bottom: 0;
+  right: 1px;
+  top: 1.2vw;
+  bottom: 1.2vw;
   width: 4px;
   display: flex;
   align-items: stretch;
