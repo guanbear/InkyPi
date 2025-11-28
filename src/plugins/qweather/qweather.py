@@ -373,7 +373,7 @@ class QWeather(BasePlugin):
 
         if display_style == "nothing":
             pixel_icon_map = {
-                "01d": "k0",      # 晴天 -> 太阳+云 (没有纯太阳图标)
+                "01d": "sun",     # 晴天 -> 太阳（新提取的图标）
                 "02d": "k0",      # 少云 -> 太阳+云
                 "03d": "Pf",      # 多云 -> 云
                 "04d": "Hx",      # 阴天 -> 厚云
@@ -383,7 +383,7 @@ class QWeather(BasePlugin):
                 "13d": "nt",      # 雪 -> 云+雪
                 "50d": "p8"       # 雾/霾 -> 雾
             }
-            pixel_icon = pixel_icon_map.get(base_icon, "k0")
+            pixel_icon = pixel_icon_map.get(base_icon, "sun")
             return f"pixel/{pixel_icon}"
 
         return base_icon
