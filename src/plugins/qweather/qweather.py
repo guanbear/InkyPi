@@ -169,7 +169,7 @@ class QWeather(BasePlugin):
             theme_mode = 'light'
 
         display_style = settings.get('displayStyle', 'default')
-        if display_style not in ['default', 'nothing']:
+        if display_style not in ['default', 'nothing', 'eink']:
             display_style = 'default'
 
         api_key = device_config.load_env_key("QWEATHER_API_KEY")
@@ -533,6 +533,22 @@ class QWeather(BasePlugin):
             }
             pixel_icon = pixel_icon_map.get(base_icon, "sun")
             return f"pixel/{pixel_icon}"
+        
+        elif display_style == "eink":
+            # E-Ink style uses simplified colorful icons
+            eink_icon_map = {
+                "01d": "k0",      # 晴天 -> 太阳+云（简化）
+                "02d": "k0",      # 少云
+                "03d": "Pf",      # 多云
+                "04d": "Hx",      # 阴天
+                "09d": "uu",      # 大雨
+                "10d": "xc",      # 雨
+                "11d": "gk",      # 雷暴
+                "13d": "nt",      # 雪
+                "50d": "p8"       # 雾/霾
+            }
+            eink_icon = eink_icon_map.get(base_icon, "k0")
+            return f"eink/{eink_icon}"
 
         return base_icon
 

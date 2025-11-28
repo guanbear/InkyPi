@@ -46,6 +46,7 @@
     <select id="displayStyle" name="displayStyle" class="form-input">
         <option value="default">Default</option>
         <option value="nothing">Nothing Weather (Pixel)</option>
+        <option value="eink">E-Ink Optimized (E6 Color)</option>
     </select>
 </div>
 
@@ -143,6 +144,7 @@
             displayStyleLabel: '🖼️ Display Style',
             styleDefault: 'Default',
             styleNothing: 'Nothing Weather (Pixel)',
+            styleEink: 'E-Ink Optimized (E6 Color)',
             titleLabel: '📝 Title',
             titlePlaceholder: 'Leave empty to show city name',
             debugLabel: '🐛 Debug Weather Alert',
@@ -179,6 +181,7 @@
             displayStyleLabel: '🖼️ 显示风格',
             styleDefault: '默认',
             styleNothing: 'Nothing天气（像素风）',
+            styleEink: '墨水屏优化（E6彩色）',
             titleLabel: '📝 标题',
             titlePlaceholder: '留空则显示城市名称',
             debugLabel: '🐛 调试天气预警',
@@ -240,6 +243,7 @@
         const styleOptions = document.querySelectorAll('#displayStyle option');
         styleOptions[0].textContent = t.styleDefault;
         styleOptions[1].textContent = t.styleNothing;
+        styleOptions[2].textContent = t.styleEink;
 
         // Update severity options
         const severityOptions = document.querySelectorAll('#mockAlertSeverity option');

@@ -44,6 +44,53 @@
   image-rendering: crisp-edges;
 }
 
+/* E-Ink Style - Optimized for E6 Color E-ink Display (800x480) */
+.weather-dashboard.eink-style {
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-weight: 500;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* E-Ink style larger fonts for readability */
+.weather-dashboard.eink-style .title {
+  font-size: min(60cqh, 10cqi);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.weather-dashboard.eink-style .current-date {
+  font-size: min(35cqh, 7cqi);
+  font-weight: 500;
+}
+
+.weather-dashboard.eink-style .current-temp {
+  font-size: 50cqmin;
+  font-weight: 700;
+}
+
+.weather-dashboard.eink-style .data-point-label {
+  font-size: min(32cqh, 14cqi);
+  font-weight: 500;
+}
+
+.weather-dashboard.eink-style .data-point-measurement {
+  font-size: min(50cqh, 28cqi);
+  font-weight: 700;
+}
+
+.weather-dashboard.eink-style .forecast-day-name {
+  font-size: min(4dvh, 4vw);
+  font-weight: 600;
+}
+
+.weather-dashboard.eink-style .forecast-temps {
+  font-size: min(3.5dvh, 3vw);
+  font-weight: 600;
+}
+
 .weather-dashboard.nothing-style .current-icon,
 .weather-dashboard.nothing-style .forecast-icon,
 .weather-dashboard.nothing-style .data-point-icon,
