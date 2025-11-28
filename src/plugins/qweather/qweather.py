@@ -198,8 +198,9 @@ class QWeather(BasePlugin):
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
 
             if mock_alert_headline and mock_alert_severity:
-                logger.info("Using mock weather alert")
+                logger.info(f"Using mock weather alert: {mock_alert_headline}, severity: {mock_alert_severity}")
                 weather_alerts = self.create_mock_alert(mock_alert_headline, mock_alert_description, mock_alert_severity)
+                logger.info(f"Mock weather alerts created: {weather_alerts}")
 
             if not title:
                 title = weather_data.get('location_name', '')
@@ -736,7 +737,9 @@ class QWeather(BasePlugin):
         return False
 
     def parse_weather_alerts(self, alerts, language="zh"):
+        logger.info(f"Parsing weather alerts: {len(alerts) if alerts else 0} alert(s)")
         if not alerts:
+            logger.info("No weather alerts to parse")
             return []
 
         severity_colors = {
@@ -768,4 +771,5 @@ class QWeather(BasePlugin):
                 'expire_time': alert.get('expireTime', '')
             })
 
+        logger.info(f"Parsed {len(parsed_alerts)} weather alert(s): {parsed_alerts}")
         return parsed_alerts
