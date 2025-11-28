@@ -188,6 +188,7 @@ class QWeather(BasePlugin):
 
             weather_data = self.get_weather_data(host, api_key, location_id, units)
             daily_forecast = self.get_daily_forecast(host, api_key, location_id, units)
+            minutely_forecast = self.get_minutely_forecast(host, api_key, location_id)
             hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
             air_quality = self.get_air_quality(host, api_key, location_id)
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
@@ -198,6 +199,7 @@ class QWeather(BasePlugin):
             template_params, sunrise_dt, sunset_dt = self.parse_weather_data(
                 weather_data,
                 daily_forecast,
+                minutely_forecast,
                 hourly_forecast,
                 air_quality,
                 weather_alerts,
@@ -318,6 +320,30 @@ class QWeather(BasePlugin):
 
         return data['hourly']
 
+    def get_minutely_forecast(self, host, api_key, location_id):
+        url = f"{host}/v7/minutely/5m"
+        params = {
+            "location": location_id,
+            "key": api_key
+        }
+        response = requests.get(url, params=params)
+
+        if response.status_code != 200:
+            logger.warning(f"Failed to retrieve minutely forecast. Status: {response.status_code}, falling back to hourly only")
+            return []
+
+        try:
+            data = response.json()
+        except Exception as e:
+            logger.warning(f"Failed to parse minutely JSON response: {e}, falling back to hourly only")
+            return []
+
+        if data.get('code') != '200':
+            logger.warning(f"Invalid minutely forecast response: {data}, falling back to hourly only")
+            return []
+
+        return data.get('minutely', [])
+
     def get_air_quality(self, host, api_key, location_id):
         long, lat = location_id.split(',')
         url = f"{host}/airquality/v1/current/{lat}/{long}"
@@ -365,7 +391,7 @@ class QWeather(BasePlugin):
 
         return []
 
-    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default"):
+    def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default"):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
@@ -390,7 +416,7 @@ class QWeather(BasePlugin):
 
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
-        data['hourly_forecast'] = self.parse_hourly(hourly_forecast, tz, time_format, units)
+        data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
         return data, sunrise_dt, sunset_dt
@@ -482,6 +508,81 @@ class QWeather(BasePlugin):
                 break
 
         return hourly
+
+    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        merged = []
+        current_time = datetime.now(tz)
+        two_hours_later = current_time + pytz.timedelta(hours=2)
+
+        if minutely_forecast:
+            logger.info(f"Using {len(minutely_forecast)} minutely forecast points for first 2 hours")
+            minutely_temps = {}
+
+            for minute_data in minutely_forecast:
+                dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
+
+                if dt < current_time:
+                    continue
+
+                if dt > two_hours_later:
+                    break
+
+                hour_key = dt.replace(minute=0, second=0, microsecond=0)
+                if hour_key not in minutely_temps:
+                    minutely_temps[hour_key] = []
+
+                precip_amount = float(minute_data.get('precip', 0))
+                if units == "imperial":
+                    precip_amount = precip_amount / 25.4
+
+                minutely_temps[hour_key].append({
+                    'precip': precip_amount,
+                    'dt': dt
+                })
+
+            hourly_data = self.parse_hourly(hourly_forecast, tz, time_format, units)
+
+            for hour_time in sorted(minutely_temps.keys()):
+                if hour_time >= two_hours_later:
+                    break
+
+                temps_in_hour = minutely_temps[hour_time]
+                if not temps_in_hour:
+                    continue
+
+                total_precip = sum(item['precip'] for item in temps_in_hour)
+
+                matching_hourly = next((h for h in hourly_data if h['time'] == self.format_time(hour_time, time_format, hour_only=True)), None)
+                temp = matching_hourly['temperature'] if matching_hourly else None
+
+                if temp is None and hourly_data:
+                    temp = hourly_data[0]['temperature']
+
+                merged.append({
+                    "time": self.format_time(hour_time, time_format, hour_only=True),
+                    "temperature": temp,
+                    "precipitation": 1.0 if total_precip > 0 else 0.0,
+                    "rain": round(total_precip, 2)
+                })
+
+        hourly_parsed = self.parse_hourly(hourly_forecast, tz, time_format, units)
+        for hour_data in hourly_parsed:
+            hour_dt_str = hour_data['time']
+
+            is_within_2h = False
+            for existing in merged:
+                if existing['time'] == hour_dt_str:
+                    is_within_2h = True
+                    break
+
+            if not is_within_2h:
+                merged.append(hour_data)
+
+            if len(merged) >= 24:
+                break
+
+        logger.info(f"Merged forecast: {len(merged)} data points")
+        return merged[:24]
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh"):
         data_points = []
