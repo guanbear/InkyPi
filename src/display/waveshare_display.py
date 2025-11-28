@@ -7,6 +7,7 @@ from display.abstract_display import AbstractDisplay
 from PIL import Image
 from pathlib import Path
 from plugins.plugin_registry import get_plugin_instance
+from utils.image_utils import optimize_for_e6_display
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class WaveshareDisplay(AbstractDisplay):
 
 
     def display_image(self, image, image_settings=[]):
-        
+
         """
         Displays an image on the Waveshare display.
 
@@ -102,13 +103,13 @@ class WaveshareDisplay(AbstractDisplay):
         if not image:
             raise ValueError(f"No image provided.")
 
-        # Assume device was in sleep mode.
+        display_type = self.device_config.get_config("display_type")
+        image = optimize_for_e6_display(image, display_type)
+
         self.epd_display_init()
 
-        # Clear residual pixels before updating the image.
         self.epd_display.Clear()
 
-        # Display the image on the WS display.
         if not self.bi_color_display:
             self.epd_display.display(self.epd_display.getbuffer(image))
         else:
@@ -118,6 +119,5 @@ class WaveshareDisplay(AbstractDisplay):
                 self.epd_display.getbuffer(color_image)
             )
 
-        # Put device into low power mode (EPD displays maintain image when powered off)
         logger.info("Putting Waveshare display into sleep mode for power saving.")
         self.epd_display.sleep()

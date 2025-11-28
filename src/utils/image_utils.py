@@ -6,6 +6,7 @@ import logging
 import hashlib
 import tempfile
 import subprocess
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -158,3 +159,41 @@ def pad_image_blur(img: Image, dimensions: tuple[int, int]) -> Image:
     img_size = img.size
     bkg.paste(img, ((dimensions[0] - img_size[0]) // 2, (dimensions[1] - img_size[1]) // 2))
     return bkg
+
+def optimize_for_e6_display(image, display_type):
+    """
+    Optimize image for Waveshare e6 (ACeP) displays with improved color mapping and dithering.
+
+    Args:
+        image (PIL.Image): Source image to optimize
+        display_type (str): Display model identifier (e.g., 'epd7in3e')
+
+    Returns:
+        PIL.Image: Optimized image for e6 display
+    """
+
+    if 'e' not in display_type.lower() or 'epd' not in display_type.lower():
+        return image
+
+    logger.info(f"Applying e6 display optimization for {display_type}")
+
+    image = image.convert('RGB')
+
+    e6_palette = [
+        0, 0, 0,        # Black
+        255, 255, 255,  # White
+        255, 255, 0,    # Yellow
+        255, 0, 0,      # Red
+        0, 0, 255,      # Blue
+        0, 255, 0       # Green
+    ]
+
+    palette_image = Image.new('P', (1, 1))
+    palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+
+    enhanced = ImageEnhance.Contrast(image).enhance(1.15)
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.1)
+
+    optimized = enhanced.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+
+    return optimized.convert('RGB')
