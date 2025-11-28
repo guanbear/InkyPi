@@ -55,6 +55,26 @@
 </div>
 
 <div class="form-group">
+    <label class="form-label" id="debugLabel">🐛 Debug Weather Alert</label>
+    <div class="form-group">
+        <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="Alert headline (leave empty for real alerts)" />
+    </div>
+    <div class="form-group">
+        <textarea id="mockAlertDescription" name="mockAlertDescription" class="form-input" rows="2" placeholder="Alert description"></textarea>
+    </div>
+    <div class="form-group">
+        <span id="severityLabel">Severity:</span>
+        <select id="mockAlertSeverity" name="mockAlertSeverity" class="form-input">
+            <option value="">None (Use Real)</option>
+            <option value="minor">Minor</option>
+            <option value="moderate">Moderate</option>
+            <option value="severe">Severe</option>
+            <option value="extreme">Extreme</option>
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
     <label for="displayMetrics" class="form-label" id="displayLabel">👁️ Display Options</label>
 
     <div class="form-group">
@@ -128,6 +148,15 @@
             styleNothing: 'Nothing Weather (Pixel)',
             titleLabel: '📝 Title',
             titlePlaceholder: 'Leave empty to show city name',
+            debugLabel: '🐛 Debug Weather Alert',
+            alertHeadlinePlaceholder: 'Alert headline (leave empty for real alerts)',
+            alertDescriptionPlaceholder: 'Alert description',
+            severityLabel: 'Severity:',
+            severityNone: 'None (Use Real)',
+            severityMinor: 'Minor',
+            severityModerate: 'Moderate',
+            severitySevere: 'Severe',
+            severityExtreme: 'Extreme',
             displayLabel: '👁️ Display Options',
             refreshTimeLabel: 'Refresh Time',
             metricsLabel: 'Metrics',
@@ -156,6 +185,15 @@
             styleNothing: 'Nothing天气（像素风）',
             titleLabel: '📝 标题',
             titlePlaceholder: '留空则显示城市名称',
+            debugLabel: '🐛 调试天气预警',
+            alertHeadlinePlaceholder: '预警标题（留空使用真实预警）',
+            alertDescriptionPlaceholder: '预警描述',
+            severityLabel: '严重程度:',
+            severityNone: '无（使用真实）',
+            severityMinor: '轻微',
+            severityModerate: '中等',
+            severitySevere: '严重',
+            severityExtreme: '极端',
             displayLabel: '👁️ 显示选项',
             refreshTimeLabel: '刷新时间',
             metricsLabel: '气象指标',
@@ -182,6 +220,10 @@
         document.getElementById('displayStyleLabel').textContent = t.displayStyleLabel;
         document.getElementById('titleLabel').textContent = t.titleLabel;
         document.getElementById('customTitle').placeholder = t.titlePlaceholder;
+        document.getElementById('debugLabel').textContent = t.debugLabel;
+        document.getElementById('mockAlertHeadline').placeholder = t.alertHeadlinePlaceholder;
+        document.getElementById('mockAlertDescription').placeholder = t.alertDescriptionPlaceholder;
+        document.getElementById('severityLabel').textContent = t.severityLabel;
         document.getElementById('displayLabel').textContent = t.displayLabel;
         document.getElementById('refreshTimeLabel').textContent = t.refreshTimeLabel;
         document.getElementById('metricsLabel').textContent = t.metricsLabel;
@@ -204,6 +246,14 @@
         const styleOptions = document.querySelectorAll('#displayStyle option');
         styleOptions[0].textContent = t.styleDefault;
         styleOptions[1].textContent = t.styleNothing;
+
+        // Update severity options
+        const severityOptions = document.querySelectorAll('#mockAlertSeverity option');
+        severityOptions[0].textContent = t.severityNone;
+        severityOptions[1].textContent = t.severityMinor;
+        severityOptions[2].textContent = t.severityModerate;
+        severityOptions[3].textContent = t.severitySevere;
+        severityOptions[4].textContent = t.severityExtreme;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -282,6 +332,10 @@
 
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
 
+            document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
+            document.getElementById('mockAlertDescription').value = pluginSettings.mockAlertDescription || '';
+            document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
+
             // Update language UI
             updateLanguage(pluginSettings.language || 'en');
         } else {
@@ -307,6 +361,10 @@
             document.getElementById('temperatureBars').checked = true;
             document.getElementById('temperatureBars').value = "true";
             document.getElementById('customTitle').value = '';
+
+            document.getElementById('mockAlertHeadline').value = '';
+            document.getElementById('mockAlertDescription').value = '';
+            document.getElementById('mockAlertSeverity').value = '';
 
             // Initialize with English
             updateLanguage('en');
