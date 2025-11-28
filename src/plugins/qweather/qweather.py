@@ -438,14 +438,6 @@ class QWeather(BasePlugin):
         data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
-        # Add sunrise/sunset times for chart
-        if sunrise_dt:
-            data['sunrise_time'] = self.format_time(sunrise_dt, time_format, hour_only=True)
-            data['sunrise_icon'] = self.get_plugin_dir('icons/sunrise.png')
-        if sunset_dt:
-            data['sunset_time'] = self.format_time(sunset_dt, time_format, hour_only=True)
-            data['sunset_icon'] = self.get_plugin_dir('icons/sunset.png')
-
         if data['forecast']:
             forecast_temps = []
             for day in data['forecast']:

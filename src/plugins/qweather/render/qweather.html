@@ -155,9 +155,8 @@
 	const unit = isImperial ? "in" : "mm";
 	const threshold = isImperial ? 0.0035 : 0.09;
 
-	// Sunrise and sunset times
-	const sunriseTime = "{{ sunrise_time|default('') }}";
-	const sunsetTime = "{{ sunset_time|default('') }}";
+	// Text color based on theme
+	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') }}"{% endif %};
 
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
@@ -190,7 +189,7 @@
 			  textY = y + 13;
 			  unitY = y + 20;
 			}
-            ctx.fillStyle = "{{ plugin_settings.textColor }}";
+            ctx.fillStyle = textColor;
             ctx.fillText(rainAmount.toFixed(2), x, textY);
             ctx.fillText(unit, x, unitY);
           }
@@ -200,76 +199,6 @@
       }
     });
 
-    Chart.register({
-      id: 'sunriseSunset',
-      afterDatasetsDraw(chart, args, pluginOptions) {
-        const { ctx } = chart;
-        const { sunrise, sunset, labels } = pluginOptions;
-
-        if (!sunrise && !sunset) return;
-
-        const chartArea = chart.chartArea;
-        const xScale = chart.scales.x;
-        const yScale = chart.scales.y;
-
-        ctx.save();
-
-        // Draw sunrise
-        if (sunrise) {
-          const sunriseIndex = labels.indexOf(sunrise);
-          if (sunriseIndex !== -1) {
-            const x = xScale.getPixelForValue(sunriseIndex);
-            const yTop = chartArea.top;
-            const yBottom = chartArea.bottom;
-
-            // Draw vertical line
-            ctx.strokeStyle = 'rgba(255, 160, 0, 0.5)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(x, yTop);
-            ctx.lineTo(x, yBottom);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Draw icon (using emoji as placeholder)
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'rgba(255, 160, 0, 0.9)';
-            ctx.textAlign = 'center';
-            ctx.fillText('🌅', x, yTop - 5);
-          }
-        }
-
-        // Draw sunset
-        if (sunset) {
-          const sunsetIndex = labels.indexOf(sunset);
-          if (sunsetIndex !== -1) {
-            const x = xScale.getPixelForValue(sunsetIndex);
-            const yTop = chartArea.top;
-            const yBottom = chartArea.bottom;
-
-            // Draw vertical line
-            ctx.strokeStyle = 'rgba(255, 100, 50, 0.5)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(x, yTop);
-            ctx.lineTo(x, yBottom);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Draw icon (using emoji as placeholder)
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'rgba(255, 100, 50, 0.9)';
-            ctx.textAlign = 'center';
-            ctx.fillText('🌇', x, yTop - 5);
-          }
-        }
-
-        ctx.restore();
-      }
-    });
-	
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -315,7 +244,7 @@
               padding: 0,
               maxRotation: 0, // Prevent label rotation
               minRotation: 0, // Prevent label rotation
-              color: "{{ plugin_settings.textColor }}",
+              color: textColor,
               font: {
                 family: 'Jost'
               }
@@ -332,7 +261,7 @@
           y: {
             ticks: {
               padding: 0,
-              color: "{{ plugin_settings.textColor }}",
+              color: textColor,
               font: {
                 family: 'Jost'
               },
@@ -352,7 +281,7 @@
             grid: { display: false },
             ticks: {
               padding: 0,
-              color: "{{ plugin_settings.textColor }}",
+              color: textColor,
               font: {
                 family: 'Jost'
               },
@@ -370,9 +299,8 @@
         plugins: {
           legend: { display: false },
 		  {% if plugin_settings.displayRain == "true" %}
-			annotationRain: { precipitationData: rain },
+			annotationRain: { precipitationData: rain }
 	      {% endif %}
-		  sunriseSunset: { sunrise: sunriseTime, sunset: sunsetTime, labels: labels }
         },
         elements: {
           line: {

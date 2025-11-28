@@ -139,14 +139,14 @@
   padding: 0.5dvh 1.5vw;
   border-radius: 0.5vw;
   gap: 0.8vw;
-  font-size: min(2.2dvh, 2.2vw);
+  font-size: min(2.8dvh, 2.8vw);
   font-weight: bold;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   animation: alertPulse 2s ease-in-out infinite;
 }
 
 .alert-icon-inline {
-  font-size: min(2.5dvh, 2.5vw);
+  font-size: min(3dvh, 3vw);
   line-height: 1;
 }
 
