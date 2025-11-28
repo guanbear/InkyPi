@@ -13,23 +13,22 @@
   <div class="last-refresh">{{ labels.last_refresh }}: {{ last_refresh_time }}</div>
   {% endif %}
   <!-- Current Date -->
-  <div class="header">
+  <div class="header {% if weather_alerts and weather_alerts|length > 0 %}has-alerts{% endif %}">
     <div class="title">{{ title }}</div>
-    <div class="current-date">{{ current_date }}</div>
-  </div>
-  <!-- Weather Alerts Inline -->
-  {% if weather_alerts and weather_alerts|length > 0 %}
-  <div class="weather-alerts-section">
-    <div class="weather-alerts-inline">
-      {% for alert in weather_alerts %}
-        <div class="weather-alert-inline" style="background-color: {{ alert.bg_color }}; color: {{ alert.text_color }};">
-          <span class="alert-icon-inline">⚠</span>
-          <span class="alert-headline-inline">{{ alert.headline }}</span>
-        </div>
-      {% endfor %}
+    <div class="header-bottom-row">
+      <div class="current-date">{{ current_date }}</div>
+      {% if weather_alerts and weather_alerts|length > 0 %}
+      <div class="weather-alerts-inline">
+        {% for alert in weather_alerts %}
+          <div class="weather-alert-inline" style="background-color: {{ alert.bg_color }}; color: {{ alert.text_color }};">
+            <span class="alert-icon-inline">⚠</span>
+            <span class="alert-headline-inline">{{ alert.headline }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
   </div>
-  {% endif %}
 
   <div class="today-container">
     <!-- Current Weather Row -->
