@@ -3,7 +3,7 @@ from PIL import Image
 import os
 import requests
 import logging
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from astral import moon
 import pytz
 from io import BytesIO
@@ -512,7 +512,7 @@ class QWeather(BasePlugin):
     def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
         merged = []
         current_time = datetime.now(tz)
-        two_hours_later = current_time + pytz.timedelta(hours=2)
+        two_hours_later = current_time + timedelta(hours=2)
 
         if minutely_forecast:
             logger.info(f"Using {len(minutely_forecast)} minutely forecast points for first 2 hours")
