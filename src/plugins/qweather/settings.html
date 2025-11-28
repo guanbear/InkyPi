@@ -44,6 +44,17 @@
 </div>
 
 <div class="form-group">
+    <label for="hourlySource" class="form-label">Hourly Forecast Source:</label>
+    <select id="hourlySource" name="hourlySource" class="form-input">
+        <option value="qweather">QWeather (和风天气)</option>
+        <option value="caiyun">Caiyun Weather (彩云天气)</option>
+    </select>
+    <small style="display: block; margin-top: 5px; color: #666;">
+        彩云天气2小时内预报更准确，需在 .env 配置 CAIYUN_API_KEY
+    </small>
+</div>
+
+<div class="form-group">
     <label for="themeMode" class="form-label">Theme Mode:</label>
     <select id="themeMode" name="themeMode" class="form-input">
         <option value="light">Light</option>
@@ -159,6 +170,7 @@
             document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
             document.getElementById('units').value = pluginSettings.units || 'metric';
             document.getElementById('language').value = pluginSettings.language || 'zh';
+            document.getElementById('hourlySource').value = pluginSettings.hourlySource || 'qweather';
             document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
             document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
 
@@ -189,6 +201,7 @@
             document.getElementById('longitude').value = '116.4074';
             document.getElementById('units').value = "metric";
             document.getElementById('language').value = "zh";
+            document.getElementById('hourlySource').value = "qweather";
             document.getElementById('themeMode').value = "auto";
             document.getElementById('displayStyle').value = "default";
             document.getElementById('displayRefreshTime').checked = true;

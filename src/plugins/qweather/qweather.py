@@ -164,6 +164,10 @@ class QWeather(BasePlugin):
         if language not in ['zh', 'en']:
             language = 'zh'
 
+        hourly_source = settings.get('hourlySource', 'qweather')
+        if hourly_source not in ['qweather', 'caiyun']:
+            hourly_source = 'qweather'
+
         theme_mode = settings.get('themeMode', 'light')
         if theme_mode not in ['light', 'dark', 'auto']:
             theme_mode = 'light'
@@ -188,7 +192,17 @@ class QWeather(BasePlugin):
 
             weather_data = self.get_weather_data(host, api_key, location_id, units)
             daily_forecast = self.get_daily_forecast(host, api_key, location_id, units)
-            hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
+
+            if hourly_source == 'caiyun':
+                caiyun_api_key = device_config.load_env_key("CAIYUN_API_KEY")
+                if caiyun_api_key:
+                    hourly_forecast = self.get_caiyun_hourly_forecast(caiyun_api_key, lat, long, tz)
+                else:
+                    logger.warning("Caiyun API key not configured, falling back to QWeather hourly data")
+                    hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
+            else:
+                hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
+
             air_quality = self.get_air_quality(host, api_key, location_id)
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
 
@@ -317,6 +331,48 @@ class QWeather(BasePlugin):
             raise RuntimeError("Failed to get valid hourly forecast data.")
 
         return data['hourly']
+
+    def get_caiyun_hourly_forecast(self, api_key, lat, long, tz):
+        url = f"https://api.caiyunapp.com/v2.6/{api_key}/{long},{lat}/hourly"
+        params = {
+            "hourlysteps": 48
+        }
+        response = requests.get(url, params=params)
+
+        if response.status_code != 200:
+            logger.error(f"Failed to retrieve Caiyun hourly forecast. Status: {response.status_code}, Content: {response.content}")
+            raise RuntimeError("Failed to retrieve Caiyun hourly forecast.")
+
+        try:
+            data = response.json()
+        except Exception as e:
+            logger.error(f"Failed to parse Caiyun JSON response: {e}, Content: {response.text}")
+            raise RuntimeError("Failed to parse Caiyun hourly forecast data.")
+
+        if data.get('status') != 'ok':
+            logger.error(f"Invalid Caiyun forecast response: {data}")
+            raise RuntimeError("Failed to get valid Caiyun hourly forecast data.")
+
+        hourly_data = data['result']['hourly']
+        caiyun_hourly = []
+
+        for i in range(len(hourly_data['temperature'])):
+            dt_str = hourly_data['temperature'][i]['datetime']
+            dt = datetime.fromisoformat(dt_str)
+
+            precip_data = hourly_data['precipitation'][i]
+            precip_prob = precip_data.get('probability', 0)
+            precip_amount = precip_data.get('value', 0)
+
+            caiyun_hourly.append({
+                'fxTime': dt.isoformat(),
+                'temp': str(hourly_data['temperature'][i]['value']),
+                'pop': str(int(precip_prob * 100)),
+                'precip': str(precip_amount)
+            })
+
+        logger.info(f"Retrieved {len(caiyun_hourly)} hours from Caiyun Weather")
+        return caiyun_hourly
 
     def get_air_quality(self, host, api_key, location_id):
         long, lat = location_id.split(',')
