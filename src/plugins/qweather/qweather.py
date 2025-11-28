@@ -226,7 +226,8 @@ class QWeather(BasePlugin):
                 units,
                 time_format,
                 language,
-                display_style
+                display_style,
+                plugin_settings
             )
             template_params['title'] = title
             template_params['labels'] = LABELS[language]
@@ -475,7 +476,7 @@ class QWeather(BasePlugin):
             'expireTime': (datetime.now() + timedelta(hours=24)).isoformat()
         }]
 
-    def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default"):
+    def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default", settings=None):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
