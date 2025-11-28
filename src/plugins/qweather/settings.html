@@ -2,33 +2,30 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <div class="form-group">
-    <label class="form-label">QWeather API Configuration: </label>
-    <div class="form-group">
-        <span>API Host </span>
-        <input type="text" id="qweatherHost" name="qweatherHost" class="form-input" placeholder="https://devapi.qweather.com" />
-        <small style="display: block; margin-top: 5px; color: #666;">
-            留空则使用 .env 文件中的 QWEATHER_HOST 配置<br>
-            开发版: https://devapi.qweather.com (免费，每天1000次)<br>
-            商业版: https://api.qweather.com
-        </small>
-    </div>
+    <label for="language" class="form-label">
+        <span id="languageLabel">🌐 Language</span>
+    </label>
+    <select id="language" name="language" class="form-input">
+        <option value="en">🇺🇸 English</option>
+        <option value="zh">🇨🇳 中文</option>
+    </select>
 </div>
 
 <div class="form-group">
-    <label class="form-label">Location: </label>
+    <label class="form-label" id="locationLabel">📍 Location</label>
     <div class="form-group">
-        <span>Latitude </span>
+        <span id="latitudeLabel">Latitude</span>
         <input readonly type="text" id="latitude" name="latitude" class="form-input" />
     </div>
     <div class="form-group">
-        <span>Longitude </span>
+        <span id="longitudeLabel">Longitude</span>
         <input readonly type="text" id="longitude" name="longitude" class="form-input" />
     </div>
     <button type="button" id="openMap" class="action-button compact">Select Location</button>
 </div>
 
 <div class="form-group">
-    <label for="units" class="form-label">Units:</label>
+    <label for="units" class="form-label" id="unitsLabel">🌡️ Units</label>
     <select id="units" name="units" class="form-input">
         <option value="metric">Metric (°C)</option>
         <option value="imperial">Imperial (°F)</option>
@@ -36,15 +33,7 @@
 </div>
 
 <div class="form-group">
-    <label for="language" class="form-label">Language:</label>
-    <select id="language" name="language" class="form-input">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
-    </select>
-</div>
-
-<div class="form-group">
-    <label for="themeMode" class="form-label">Theme Mode:</label>
+    <label for="themeMode" class="form-label" id="themeModeLabel">🎨 Theme Mode</label>
     <select id="themeMode" name="themeMode" class="form-input">
         <option value="light">Light</option>
         <option value="dark">Dark</option>
@@ -53,7 +42,7 @@
 </div>
 
 <div class="form-group">
-    <label for="displayStyle" class="form-label">Display Style:</label>
+    <label for="displayStyle" class="form-label" id="displayStyleLabel">🖼️ Display Style</label>
     <select id="displayStyle" name="displayStyle" class="form-input">
         <option value="default">Default</option>
         <option value="nothing">Nothing Weather (Pixel)</option>
@@ -61,72 +50,52 @@
 </div>
 
 <div class="form-group">
-    <label class="form-label">Title:</label>
-    <input type="text" id="customTitle" name="customTitle" class="form-input" placeholder="留空则显示城市名称" />
+    <label class="form-label" id="titleLabel">📝 Title</label>
+    <input type="text" id="customTitle" name="customTitle" class="form-input" placeholder="Leave empty to show city name" />
 </div>
 
 <div class="form-group">
-    <label class="form-label">Mock Weather Alert (留空使用真实预警):</label>
-    <div class="form-group">
-        <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="预警标题，例如：暴雨橙色预警" />
-    </div>
-    <div class="form-group">
-        <textarea id="mockAlertDescription" name="mockAlertDescription" class="form-input" rows="3" placeholder="预警描述，例如：预计未来6小时内将出现50毫米以上降水"></textarea>
-    </div>
-    <div class="form-group">
-        <label for="mockAlertSeverity" class="form-label">Severity:</label>
-        <select id="mockAlertSeverity" name="mockAlertSeverity" class="form-input">
-            <option value="">None (Use Real)</option>
-            <option value="minor">Minor (轻微)</option>
-            <option value="moderate">Moderate (中等)</option>
-            <option value="severe">Severe (严重)</option>
-            <option value="extreme">Extreme (极端)</option>
-        </select>
-    </div>
-</div>
-
-<div class="form-group">
-    <label for="displayMetrics" class="form-label">Display: </label>
+    <label for="displayMetrics" class="form-label" id="displayLabel">👁️ Display Options</label>
 
     <div class="form-group">
       <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" onclick="this.value=this.checked ? 'true' : 'false';">
-      <span>Refresh Time</span>
+      <span id="refreshTimeLabel">Refresh Time</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="displayMetrics" name="displayMetrics" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Metrics</span>
+        <span id="metricsLabel">Metrics</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="displayGraph" name="displayGraph" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Weather Graph</span>
+        <span id="graphLabel">Weather Graph</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Rain Amount</span>
+        <span id="rainLabel">Rain Amount</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Moon Phase</span>
+        <span id="moonPhaseLabel">Moon Phase</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="temperatureBars" name="temperatureBars" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Temperature Bars (Apple Style)</span>
+        <span id="temperatureBarsLabel">Temperature Bars (Apple Style)</span>
     </div>
 
     <div class="form-group">
         <input type="checkbox" id="displayForecast" name="displayForecast" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span>Forecast</span>
+        <span id="forecastLabel">Forecast</span>
         <select id="forecastDays" name="forecastDays" class="form-input">
             <option value=3>3</option>
             <option value=5>5</option>
             <option value=7>7</option>
         </select>
-        <span>days</span>
+        <span id="daysLabel">days</span>
     </div>
 </div>
 
@@ -141,6 +110,102 @@
 </div>
 
 <script>
+    // i18n translations
+    const translations = {
+        en: {
+            languageLabel: '🌐 Language',
+            locationLabel: '📍 Location',
+            latitudeLabel: 'Latitude',
+            longitudeLabel: 'Longitude',
+            selectLocation: 'Select Location',
+            unitsLabel: '🌡️ Units',
+            themeModeLabel: '🎨 Theme Mode',
+            themeLight: 'Light',
+            themeDark: 'Dark',
+            themeAuto: 'Auto (based on sunrise/sunset)',
+            displayStyleLabel: '🖼️ Display Style',
+            styleDefault: 'Default',
+            styleNothing: 'Nothing Weather (Pixel)',
+            titleLabel: '📝 Title',
+            titlePlaceholder: 'Leave empty to show city name',
+            displayLabel: '👁️ Display Options',
+            refreshTimeLabel: 'Refresh Time',
+            metricsLabel: 'Metrics',
+            graphLabel: 'Weather Graph',
+            rainLabel: 'Rain Amount',
+            moonPhaseLabel: 'Moon Phase',
+            temperatureBarsLabel: 'Temperature Bars (Apple Style)',
+            forecastLabel: 'Forecast',
+            daysLabel: 'days',
+            modalTitle: 'Select Location',
+            saveButton: 'Save'
+        },
+        zh: {
+            languageLabel: '🌐 语言',
+            locationLabel: '📍 位置',
+            latitudeLabel: '纬度',
+            longitudeLabel: '经度',
+            selectLocation: '选择位置',
+            unitsLabel: '🌡️ 单位',
+            themeModeLabel: '🎨 主题模式',
+            themeLight: '浅色',
+            themeDark: '深色',
+            themeAuto: '自动（基于日出日落）',
+            displayStyleLabel: '🖼️ 显示风格',
+            styleDefault: '默认',
+            styleNothing: 'Nothing天气（像素风）',
+            titleLabel: '📝 标题',
+            titlePlaceholder: '留空则显示城市名称',
+            displayLabel: '👁️ 显示选项',
+            refreshTimeLabel: '刷新时间',
+            metricsLabel: '气象指标',
+            graphLabel: '天气图表',
+            rainLabel: '降水量',
+            moonPhaseLabel: '月相',
+            temperatureBarsLabel: '温度条（苹果风格）',
+            forecastLabel: '天气预报',
+            daysLabel: '天',
+            modalTitle: '选择位置',
+            saveButton: '保存'
+        }
+    };
+
+    function updateLanguage(lang) {
+        const t = translations[lang];
+        document.getElementById('languageLabel').textContent = t.languageLabel;
+        document.getElementById('locationLabel').textContent = t.locationLabel;
+        document.getElementById('latitudeLabel').textContent = t.latitudeLabel;
+        document.getElementById('longitudeLabel').textContent = t.longitudeLabel;
+        document.getElementById('openMap').textContent = t.selectLocation;
+        document.getElementById('unitsLabel').textContent = t.unitsLabel;
+        document.getElementById('themeModeLabel').textContent = t.themeModeLabel;
+        document.getElementById('displayStyleLabel').textContent = t.displayStyleLabel;
+        document.getElementById('titleLabel').textContent = t.titleLabel;
+        document.getElementById('customTitle').placeholder = t.titlePlaceholder;
+        document.getElementById('displayLabel').textContent = t.displayLabel;
+        document.getElementById('refreshTimeLabel').textContent = t.refreshTimeLabel;
+        document.getElementById('metricsLabel').textContent = t.metricsLabel;
+        document.getElementById('graphLabel').textContent = t.graphLabel;
+        document.getElementById('rainLabel').textContent = t.rainLabel;
+        document.getElementById('moonPhaseLabel').textContent = t.moonPhaseLabel;
+        document.getElementById('temperatureBarsLabel').textContent = t.temperatureBarsLabel;
+        document.getElementById('forecastLabel').textContent = t.forecastLabel;
+        document.getElementById('daysLabel').textContent = t.daysLabel;
+        document.getElementById('modalTitle').textContent = t.modalTitle;
+        document.getElementById('closeMap').textContent = t.saveButton;
+
+        // Update theme mode options
+        const themeOptions = document.querySelectorAll('#themeMode option');
+        themeOptions[0].textContent = t.themeLight;
+        themeOptions[1].textContent = t.themeDark;
+        themeOptions[2].textContent = t.themeAuto;
+
+        // Update display style options
+        const styleOptions = document.querySelectorAll('#displayStyle option');
+        styleOptions[0].textContent = t.styleDefault;
+        styleOptions[1].textContent = t.styleNothing;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
 
         const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -149,12 +214,18 @@
         const $openMap = document.querySelector('#openMap');
         const $mapModal = document.querySelector('#mapModal');
         const $closeMap = document.querySelector('#closeMap');
+        const $language = document.querySelector('#language');
 
         let latitude = +$latitude.value || 39.9042;
         let longitude = +$longitude.value || 116.4074;
         let zoom = $latitude.value ? 4.5 : 4;
 
         let map, marker;
+
+        // Language change handler
+        $language.addEventListener('change', (e) => {
+            updateLanguage(e.target.value);
+        });
 
         $openMap.addEventListener('click', () => {
             openModal('mapModal')
@@ -179,11 +250,10 @@
         });
 
         if (loadPluginSettings) {
-            document.getElementById('qweatherHost').value = pluginSettings.qweatherHost || '';
             document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
             document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
             document.getElementById('units').value = pluginSettings.units || 'metric';
-            document.getElementById('language').value = pluginSettings.language || 'zh';
+            document.getElementById('language').value = pluginSettings.language || 'en';
             document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
             document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
 
@@ -208,18 +278,17 @@
             document.getElementById('moonPhase').value = (pluginSettings.moonPhase !== undefined && pluginSettings.moonPhase !== null) ? pluginSettings.moonPhase : 'false';
 
             document.getElementById('temperatureBars').checked = pluginSettings.temperatureBars === 'true' || pluginSettings.temperatureBars === true;
-            document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'false';
+            document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'true';
 
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
-            document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
-            document.getElementById('mockAlertDescription').value = pluginSettings.mockAlertDescription || '';
-            document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
+
+            // Update language UI
+            updateLanguage(pluginSettings.language || 'en');
         } else {
-            document.getElementById('qweatherHost').value = '';
             document.getElementById('latitude').value = '39.9042';
             document.getElementById('longitude').value = '116.4074';
             document.getElementById('units').value = "metric";
-            document.getElementById('language').value = "zh";
+            document.getElementById('language').value = "en";
             document.getElementById('themeMode').value = "auto";
             document.getElementById('displayStyle').value = "default";
             document.getElementById('displayRefreshTime').checked = true;
@@ -235,12 +304,12 @@
             document.getElementById('forecastDays').value = 7;
             document.getElementById('moonPhase').checked = false;
             document.getElementById('moonPhase').value = "false";
-            document.getElementById('temperatureBars').checked = false;
-            document.getElementById('temperatureBars').value = "false";
+            document.getElementById('temperatureBars').checked = true;
+            document.getElementById('temperatureBars').value = "true";
             document.getElementById('customTitle').value = '';
-            document.getElementById('mockAlertHeadline').value = '';
-            document.getElementById('mockAlertDescription').value = '';
-            document.getElementById('mockAlertSeverity').value = '';
+
+            // Initialize with English
+            updateLanguage('en');
         }
     });
 </script>
