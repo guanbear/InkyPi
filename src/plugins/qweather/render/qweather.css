@@ -14,15 +14,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 1dvh;
   width: 100%;
   height: 100%;
   font-family: "Jost", "Noto Sans SC", sans-serif;
   background-color: #ffffff;
   color: #000000;
-  overflow: hidden;
-  padding: 1dvh 0;
 }
 
 .weather-dashboard.dark-mode {
@@ -75,7 +73,6 @@
   flex-direction: column;
   justify-content: end;
   container-type: size;
-  flex-shrink: 0;
 }
 
 .header-bottom {
@@ -158,63 +155,14 @@
   white-space: nowrap;
 }
 
-/* Block Weather Alerts */
-.weather-alerts {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5dvh;
-  margin: 0;
-  flex-shrink: 1;
-  min-height: 0;
-  overflow: hidden;
-  max-height: 12dvh;
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
-.weather-alert {
-  display: flex;
-  align-items: center;
-  padding: 0.8dvh 2vw;
-  border-radius: 0.8vw;
-  gap: 1.5vw;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  animation: alertPulse 2s ease-in-out infinite;
-  flex-shrink: 0;
-  min-height: 0;
-}
-
-.alert-icon {
-  font-size: min(3.5dvh, 3.5vw);
-  font-weight: bold;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.alert-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2dvh;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.alert-headline {
-  font-size: min(2.3dvh, 2.3vw);
-  font-weight: bold;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.alert-description {
-  font-size: min(1.8dvh, 1.8vw);
-  line-height: 1.2;
-  opacity: 0.9;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.weather-dashboard.nothing-style .alert-headline-inline {
+  font-family: "Dogica", monospace;
+  letter-spacing: 0.05em;
 }
 
 .today-container {
@@ -223,7 +171,6 @@
   justify-content: center;
   width: 100%;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 /* Current Weather Row */
@@ -335,8 +282,6 @@
   width: 100%;
   gap: 1.5dvw;
   overflow: hidden;
-  flex-shrink: 1;
-  min-height: 0;
 }
 
 .forecast-day {
@@ -405,8 +350,6 @@
 .chart-container {
   width: 100%;
   height: 16dvh;
-  flex-shrink: 1;
-  min-height: 10dvh;
 }
 
 .separator {
@@ -494,18 +437,6 @@
   .weather-dashboard {
     font-family: "Dogica";
   }
-}
-
-@keyframes alertPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
-
-.weather-dashboard.nothing-style .alert-headline,
-.weather-dashboard.nothing-style .alert-description,
-.weather-dashboard.nothing-style .alert-headline-inline {
-  font-family: "Dogica", monospace;
-  letter-spacing: 0.05em;
 }
 
 /* Apple-Style Temperature Bars */

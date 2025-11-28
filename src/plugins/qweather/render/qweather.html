@@ -15,9 +15,9 @@
   <!-- Current Date -->
   <div class="header">
     <div class="title">{{ title }}</div>
-    <div class="header-bottom{% if not (weather_alerts and weather_alerts|length > 0 and plugin_settings.alertPosition == 'inline') %} no-alerts{% endif %}">
+    <div class="header-bottom{% if not (weather_alerts and weather_alerts|length > 0) %} no-alerts{% endif %}">
       <!-- Weather Alerts Inline -->
-      {% if weather_alerts and weather_alerts|length > 0 and plugin_settings.alertPosition == "inline" %}
+      {% if weather_alerts and weather_alerts|length > 0 %}
       <div class="weather-alerts-inline">
         {% for alert in weather_alerts %}
           <div class="weather-alert-inline" style="background-color: {{ alert.bg_color }}; color: {{ alert.text_color }};">
@@ -61,23 +61,6 @@
     </div>
     {% endif %}
   </div>
-
-  <!-- Weather Alerts Block -->
-  {% if weather_alerts and weather_alerts|length > 0 and plugin_settings.alertPosition == "block" %}
-  <div class="weather-alerts">
-    {% for alert in weather_alerts %}
-      <div class="weather-alert" style="background-color: {{ alert.bg_color }}; color: {{ alert.text_color }};">
-        <div class="alert-icon">⚠</div>
-        <div class="alert-content">
-          <div class="alert-headline">{{ alert.headline }}</div>
-          {% if alert.description %}
-          <div class="alert-description">{{ alert.description }}</div>
-          {% endif %}
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
   <!-- Hourly Temperature Graph -->
   {% if plugin_settings.displayGraph and plugin_settings.displayGraph == "true" %}
