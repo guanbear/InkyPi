@@ -75,35 +75,28 @@
   container-type: size;
 }
 
-.header-bottom {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-end;
-  width: 100%;
-  gap: 2vw;
-}
-
-.spacer {
-  flex: 1;
-  min-width: 0;
-}
-
-.weather-alerts-inline {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-
 .current-date {
   font-size: min(30cqh, 6cqi);
   text-align: center;
   align-content: end;
+  width: 100%;
   line-height: 105%;
-  flex-shrink: 0;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+}
+
+.weather-alerts-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 0.5dvh 0;
+}
+
+.weather-alerts-inline {
+  display: flex;
+  flex-direction: row;
+  gap: 1vw;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .last-refresh {
@@ -131,15 +124,6 @@
 }
 
 /* Inline Weather Alerts */
-.weather-alerts-inline {
-  display: flex;
-  flex-direction: row;
-  gap: 1vw;
-  align-items: flex-end;
-  flex-wrap: nowrap;
-  overflow: hidden;
-}
-
 .weather-alert-inline {
   display: inline-flex;
   align-items: center;
