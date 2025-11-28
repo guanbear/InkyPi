@@ -265,12 +265,22 @@ class QWeather(BasePlugin):
         lat_formatted = f"{float(lat):.2f}"
         long_formatted = f"{float(long):.2f}"
 
-        url = f"{host}/v2/city/lookup"
+        # Check if using custom host
+        is_custom_host = 'qweatherapi.com' in host and 'devapi' not in host and 'api.qweather.com' not in host
+
+        if is_custom_host:
+            # Custom host uses /geo/ prefix with key parameter
+            url = f"{host}/geo/v2/city/lookup"
+        else:
+            # Standard host
+            url = f"{host}/v2/city/lookup"
+
         params = {
             "location": f"{long_formatted},{lat_formatted}",
             "key": api_key
         }
         logger.info(f"Requesting location name from: {url} with location: {params['location']}")
+
         try:
             response = requests.get(url, params=params, timeout=10)
             logger.info(f"Location API response status: {response.status_code}")
@@ -278,16 +288,16 @@ class QWeather(BasePlugin):
                 data = response.json()
                 logger.info(f"Location API response: {data}")
                 if data.get('code') == '200' and data.get('location') and len(data['location']) > 0:
-                    # Get the first location result
                     loc = data['location'][0]
                     # Return city name, fallback to district or country
-                    location_name = loc.get('name', '') or loc.get('adm2', '') or loc.get('adm1', '') or loc.get('country', '')
+                    location_name = loc.get('adm2', '') or loc.get('name', '') or loc.get('adm1', '') or loc.get('country', '')
                     logger.info(f"Found location name: {location_name}")
                     return location_name
                 else:
                     logger.warning(f"Location API returned code: {data.get('code')}, locations: {data.get('location')}")
         except Exception as e:
-            logger.error(f"Failed to get location name: {e}", exc_info=True)
+            logger.error(f"Failed to get location name: {e}")
+
         return ""
 
     def get_weather_data(self, host, api_key, location_id, units):
