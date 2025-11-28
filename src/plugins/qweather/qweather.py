@@ -265,9 +265,7 @@ class QWeather(BasePlugin):
         lat_formatted = f"{float(lat):.2f}"
         long_formatted = f"{float(long):.2f}"
 
-        # GeoAPI uses different host, always use devapi for free tier
-        geo_host = "https://geoapi.qweather.com" if "api.qweather.com" in host else "https://devapi.qweather.com"
-        url = f"{geo_host}/v2/city/lookup"
+        url = f"{host}/v2/city/lookup"
         params = {
             "location": f"{long_formatted},{lat_formatted}",
             "key": api_key
