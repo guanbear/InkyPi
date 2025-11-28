@@ -34,7 +34,7 @@
     <!-- Current Weather Row -->
     <div class="current-temperature">
       <!-- Icon + Temperature -->
-        <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
+        <img class="current-icon" src="{{current_day_icon}}" data-qweather-icon="{{current_day_icon_code}}" alt="Current Weather Icon" onerror="this.innerHTML='<i class=qi-' + this.getAttribute('data-qweather-icon') + '></i>'; this.style.display='inline-block';">
         <div class="current-weather">
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
           <div class="feels-like">{{ labels.feels_like }} {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
@@ -74,7 +74,7 @@
     {% for day in forecast[0:(plugin_settings.forecastDays | int)] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
-        <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
+        <img class="forecast-icon" src="{{day.icon}}" data-qweather-icon="{{day.icon_code}}" alt="{{ day.day }} Weather Icon" onerror="this.innerHTML='<i class=qi-' + this.getAttribute('data-qweather-icon') + '></i>'; this.style.display='inline-block';">
         <div class="forecast-temps">
           <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> /
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>

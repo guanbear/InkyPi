@@ -490,7 +490,8 @@ class QWeather(BasePlugin):
 
         data = {
             "current_date": current_date,
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png' if display_style != "qweather" else f'icons/{current_icon}'),
+            "current_day_icon": f"/images/qweather/{current_icon}",
+            "current_day_icon_code": current_icon if display_style == "qweather" else "",
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
             "temperature_unit": UNITS[units]["temperature"],
@@ -559,7 +560,8 @@ class QWeather(BasePlugin):
 
         for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png" if display_style != "qweather" else f"icons/{weather_icon}")
+            weather_icon_path = f"/images/qweather/{weather_icon}"
+            weather_icon_code = weather_icon if display_style == "qweather" else ""
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
 
@@ -583,15 +585,18 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png" if display_style != "qweather" else f"icons/{phase_name}")
+            moon_icon_path = f"/images/qweather/{phase_name}"
+            moon_icon_code = phase_name if (display_style == "qweather" and plugin_settings.moonPhase == "true") else ""
 
             forecast.append({
                 "day": day_label,
                 "high": int(float(day.get('tempMax', 0))),
                 "low": int(float(day.get('tempMin', 0))),
                 "icon": weather_icon_path,
+                "icon_code": weather_icon_code,
                 "moon_phase_pct": f"{illum_pct:.0f}",
                 "moon_phase_icon": moon_icon_path,
+                "moon_phase_icon_code": moon_icon_code
             })
 
         return forecast
@@ -728,7 +733,7 @@ class QWeather(BasePlugin):
                 "label": LABELS[language]["sunrise"],
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunrise.png')
+                "icon": "/images/qweather/sunrise.png"
             })
 
         sunset_str = today_forecast.get('sunset')
@@ -743,7 +748,7 @@ class QWeather(BasePlugin):
                 "label": LABELS[language]["sunset"],
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunset.png')
+                "icon": "/images/qweather/sunset.png"
             })
 
         wind_speed = current_weather.get('windSpeed', '0')
@@ -751,7 +756,7 @@ class QWeather(BasePlugin):
             "label": LABELS[language]["wind"],
             "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": "/images/qweather/wind.png"
         })
 
         humidity = current_weather.get('humidity', '0')
@@ -759,7 +764,7 @@ class QWeather(BasePlugin):
             "label": LABELS[language]["humidity"],
             "measurement": humidity,
             "unit": '%',
-            "icon": self.get_plugin_dir('icons/humidity.png')
+            "icon": "/images/qweather/humidity.png"
         })
 
         pressure = current_weather.get('pressure', '0')
@@ -767,7 +772,7 @@ class QWeather(BasePlugin):
             "label": LABELS[language]["pressure"],
             "measurement": pressure,
             "unit": 'hPa',
-            "icon": self.get_plugin_dir('icons/pressure.png')
+            "icon": "/images/qweather/pressure.png"
         })
 
         uv_index = today_forecast.get('uvIndex', '0')
@@ -775,7 +780,7 @@ class QWeather(BasePlugin):
             "label": LABELS[language]["uv_index"],
             "measurement": uv_index,
             "unit": '',
-            "icon": self.get_plugin_dir('icons/uvi.png')
+            "icon": "/images/qweather/uvi.png"
         })
 
         visibility = float(current_weather.get('vis', '10'))
@@ -784,7 +789,7 @@ class QWeather(BasePlugin):
             "label": LABELS[language]["visibility"],
             "measurement": visibility_str,
             "unit": 'km',
-            "icon": self.get_plugin_dir('icons/visibility.png')
+            "icon": "/images/qweather/visibility.png"
         })
 
         if air_quality:
@@ -794,7 +799,7 @@ class QWeather(BasePlugin):
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
                 "unit": aqi_category,
-                "icon": self.get_plugin_dir('icons/aqi.png')
+                "icon": "/images/qweather/aqi.png"
             })
 
         return data_points, sunrise_dt, sunset_dt
