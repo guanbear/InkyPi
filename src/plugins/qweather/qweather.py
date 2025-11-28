@@ -490,7 +490,7 @@ class QWeather(BasePlugin):
 
         data = {
             "current_date": current_date,
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
+            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png' if display_style != "eink" else f'icons/{current_icon}'),
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
             "temperature_unit": UNITS[units]["temperature"],
@@ -559,7 +559,7 @@ class QWeather(BasePlugin):
 
         for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png" if display_style != "eink" else f"icons/{weather_icon}")
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
 
@@ -583,7 +583,7 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png" if display_style != "eink" else f"icons/{phase_name}")
 
             forecast.append({
                 "day": day_label,
