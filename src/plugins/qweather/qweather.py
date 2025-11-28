@@ -205,7 +205,12 @@ class QWeather(BasePlugin):
             if not title:
                 # Try to get location name from GeoAPI
                 location_name = self.get_location_name(host, api_key, lat, long)
-                title = location_name if location_name else f"{lat}, {long}"
+                if location_name:
+                    title = location_name
+                else:
+                    # Fallback to formatted coordinates (2 decimal places)
+                    title = f"{float(lat):.2f}, {float(long):.2f}"
+                    logger.warning(f"Could not get location name, using coordinates: {title}")
 
             template_params, sunrise_dt, sunset_dt = self.parse_weather_data(
                 weather_data,
@@ -260,7 +265,9 @@ class QWeather(BasePlugin):
         lat_formatted = f"{float(lat):.2f}"
         long_formatted = f"{float(long):.2f}"
 
-        url = f"{host}/v2/city/lookup"
+        # GeoAPI uses different host, always use devapi for free tier
+        geo_host = "https://geoapi.qweather.com" if "api.qweather.com" in host else "https://devapi.qweather.com"
+        url = f"{geo_host}/v2/city/lookup"
         params = {
             "location": f"{long_formatted},{lat_formatted}",
             "key": api_key
@@ -272,15 +279,17 @@ class QWeather(BasePlugin):
             if response.status_code == 200:
                 data = response.json()
                 logger.info(f"Location API response: {data}")
-                if data.get('code') == '200' and data.get('location'):
+                if data.get('code') == '200' and data.get('location') and len(data['location']) > 0:
                     # Get the first location result
                     loc = data['location'][0]
                     # Return city name, fallback to district or country
-                    location_name = loc.get('name', '') or loc.get('adm2', '') or loc.get('country', '')
+                    location_name = loc.get('name', '') or loc.get('adm2', '') or loc.get('adm1', '') or loc.get('country', '')
                     logger.info(f"Found location name: {location_name}")
                     return location_name
+                else:
+                    logger.warning(f"Location API returned code: {data.get('code')}, locations: {data.get('location')}")
         except Exception as e:
-            logger.warning(f"Failed to get location name: {e}")
+            logger.error(f"Failed to get location name: {e}", exc_info=True)
         return ""
 
     def get_weather_data(self, host, api_key, location_id, units):
