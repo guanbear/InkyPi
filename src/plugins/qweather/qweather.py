@@ -530,7 +530,7 @@ class QWeather(BasePlugin):
         # For eink style, use QWeather official SVG icons directly
         if display_style == "eink":
             # QWeather icon codes are used as-is for SVG files
-            return f"eink/{qweather_icon}"
+            return f"eink/{qweather_icon}.svg"
         
         # For nothing style, map to pixel icons
         if display_style == "nothing":
