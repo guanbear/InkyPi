@@ -183,6 +183,10 @@ class QWeather(BasePlugin):
         mock_alert_description = settings.get('mockAlertDescription', '')
         mock_alert_severity = settings.get('mockAlertSeverity', '')
 
+        if mock_alert_headline and not mock_alert_severity:
+            mock_alert_severity = 'moderate'
+            logger.warning(f"Mock alert headline provided without severity, defaulting to 'moderate'")
+
         timezone = device_config.get_config("timezone", default="Asia/Shanghai")
         time_format = device_config.get_config("time_format", default="24h")
         tz = pytz.timezone(timezone)
@@ -197,7 +201,7 @@ class QWeather(BasePlugin):
             air_quality = self.get_air_quality(host, api_key, location_id)
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
 
-            if mock_alert_headline and mock_alert_severity:
+            if mock_alert_headline:
                 logger.info(f"Using mock weather alert: {mock_alert_headline}, severity: {mock_alert_severity}")
                 weather_alerts = self.create_mock_alert(mock_alert_headline, mock_alert_description, mock_alert_severity)
                 logger.info(f"Mock weather alerts created: {weather_alerts}")
