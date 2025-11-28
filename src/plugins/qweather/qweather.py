@@ -517,11 +517,27 @@ class QWeather(BasePlugin):
         return data, sunrise_dt, sunset_dt
 
     def map_qweather_icon(self, qweather_icon, display_style="default"):
-        base_icon = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
-
+        """
+        Map QWeather icon codes to appropriate file paths based on display style.
+        
+        Args:
+            qweather_icon: QWeather API icon code (e.g., "100", "101")
+            display_style: Display style ("default", "nothing", "eink")
+            
+        Returns:
+            Icon file path relative to plugin directory
+        """
+        # For eink style, use QWeather official SVG icons directly
+        if display_style == "eink":
+            # QWeather icon codes are used as-is for SVG files
+            return f"eink/{qweather_icon}"
+        
+        # For nothing style, map to pixel icons
         if display_style == "nothing":
+            # Map to OpenWeather-style codes first
+            base_icon = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
             pixel_icon_map = {
-                "01d": "sun",     # 晴天 -> 太阳（新提取的图标）
+                "01d": "sun",     # 晴天 -> 太阳
                 "02d": "k0",      # 少云 -> 太阳+云
                 "03d": "Pf",      # 多云 -> 云
                 "04d": "Hx",      # 阴天 -> 厚云
@@ -534,23 +550,8 @@ class QWeather(BasePlugin):
             pixel_icon = pixel_icon_map.get(base_icon, "sun")
             return f"pixel/{pixel_icon}"
         
-        elif display_style == "eink":
-            # E-Ink style uses simplified colorful icons
-            eink_icon_map = {
-                "01d": "k0",      # 晴天 -> 太阳+云（简化）
-                "02d": "k0",      # 少云
-                "03d": "Pf",      # 多云
-                "04d": "Hx",      # 阴天
-                "09d": "uu",      # 大雨
-                "10d": "xc",      # 雨
-                "11d": "gk",      # 雷暴
-                "13d": "nt",      # 雪
-                "50d": "p8"       # 雾/霾
-            }
-            eink_icon = eink_icon_map.get(base_icon, "k0")
-            return f"eink/{eink_icon}"
-
-        return base_icon
+        # Default style uses OpenWeather-style mapping
+        return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
     def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default"):
         forecast = []
