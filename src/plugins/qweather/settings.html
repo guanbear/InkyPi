@@ -66,6 +66,14 @@
 </div>
 
 <div class="form-group">
+    <label for="alertPosition" class="form-label">Weather Alert Position:</label>
+    <select id="alertPosition" name="alertPosition" class="form-input">
+        <option value="inline">Inline (with date, compact)</option>
+        <option value="block">Block (separate section, detailed)</option>
+    </select>
+</div>
+
+<div class="form-group">
     <label class="form-label">Mock Weather Alert (留空使用真实预警):</label>
     <div class="form-group">
         <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="预警标题，例如：暴雨橙色预警" />
@@ -186,6 +194,7 @@
             document.getElementById('language').value = pluginSettings.language || 'zh';
             document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
             document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
+            document.getElementById('alertPosition').value = pluginSettings.alertPosition || 'inline';
 
             document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === 'true' || pluginSettings.displayRefreshTime === true;
             document.getElementById('displayRefreshTime').value = (pluginSettings.displayRefreshTime !== undefined && pluginSettings.displayRefreshTime !== null) ? pluginSettings.displayRefreshTime : 'true';
@@ -222,6 +231,7 @@
             document.getElementById('language').value = "zh";
             document.getElementById('themeMode').value = "auto";
             document.getElementById('displayStyle').value = "default";
+            document.getElementById('alertPosition').value = "inline";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
             document.getElementById('displayMetrics').checked = true;
