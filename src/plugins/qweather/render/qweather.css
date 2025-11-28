@@ -79,13 +79,9 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 2vw;
-}
-
-.header:not(.has-alerts) .header-bottom-row {
   justify-content: end;
+  width: 100%;
+  position: relative;
 }
 
 .header.has-alerts .title {
@@ -100,14 +96,19 @@
   font-size: min(30cqh, 6cqi);
   text-align: center;
   line-height: 105%;
-  flex-shrink: 0;
   white-space: nowrap;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   align-content: center;
+  pointer-events: none;
 }
 
 .header:not(.has-alerts) .current-date {
   width: 100%;
   align-content: end;
+  position: static;
+  transform: none;
 }
 
 .weather-alerts-inline {
@@ -120,6 +121,9 @@
   overflow: hidden;
   flex-shrink: 1;
   min-width: 0;
+  max-width: 45%;
+  position: absolute;
+  left: 0;
 }
 
 .last-refresh {
