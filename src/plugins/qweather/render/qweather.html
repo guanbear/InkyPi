@@ -15,7 +15,7 @@
   <!-- Current Date -->
   <div class="header">
     <div class="title">{{ title }}</div>
-    <div class="header-bottom{% if not (weather_alerts and weather_alerts|length > 0) %} no-alerts{% endif %}">
+    <div class="header-bottom">
       <!-- Weather Alerts Inline -->
       {% if weather_alerts and weather_alerts|length > 0 %}
       <div class="weather-alerts-inline">
@@ -28,6 +28,7 @@
       </div>
       {% endif %}
       <div class="current-date">{{ current_date }}</div>
+      <div class="spacer"></div>
     </div>
   </div>
 

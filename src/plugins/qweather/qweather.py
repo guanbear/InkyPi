@@ -203,7 +203,9 @@ class QWeather(BasePlugin):
                 logger.info(f"Mock weather alerts created: {weather_alerts}")
 
             if not title:
-                title = weather_data.get('location_name', '')
+                # Try to get location name from GeoAPI
+                location_name = self.get_location_name(host, api_key, lat, long)
+                title = location_name if location_name else f"{lat}, {long}"
 
             template_params, sunrise_dt, sunset_dt = self.parse_weather_data(
                 weather_data,
@@ -251,6 +253,26 @@ class QWeather(BasePlugin):
 
     def get_location_id(self, host, api_key, lat, long):
         return f"{long},{lat}"
+
+    def get_location_name(self, host, api_key, lat, long):
+        """Get location name from coordinates using QWeather GeoAPI"""
+        url = f"{host}/v2/city/lookup"
+        params = {
+            "location": f"{long},{lat}",
+            "key": api_key
+        }
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('code') == '200' and data.get('location'):
+                    # Get the first location result
+                    loc = data['location'][0]
+                    # Return city name, fallback to district or country
+                    return loc.get('name', '') or loc.get('adm2', '') or loc.get('country', '')
+        except Exception as e:
+            logger.warning(f"Failed to get location name: {e}")
+        return ""
 
     def get_weather_data(self, host, api_key, location_id, units):
         url = f"{host}/v7/weather/now"
