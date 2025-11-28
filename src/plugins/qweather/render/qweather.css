@@ -95,14 +95,19 @@
 .current-date {
   font-size: min(30cqh, 6cqi);
   text-align: right;
-  align-content: center;
   line-height: 105%;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .header:not(.has-alerts) .current-date {
   width: 100%;
   text-align: center;
+  align-content: end;
+}
+
+.header.has-alerts .current-date {
+  align-content: center;
 }
 
 .weather-alerts-inline {
