@@ -379,3 +379,65 @@
     font-family: "Dogica";
   }
 }
+
+/* Weather Alerts */
+.weather-alerts {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8dvh;
+  margin: 0.5dvh 0;
+}
+
+.weather-alert {
+  display: flex;
+  align-items: center;
+  padding: 1dvh 2vw;
+  border-radius: 0.8vw;
+  gap: 1.5vw;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: alertPulse 2s ease-in-out infinite;
+}
+
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.alert-icon {
+  font-size: min(5dvh, 5vw);
+  font-weight: bold;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.alert-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3dvh;
+  min-width: 0;
+}
+
+.alert-headline {
+  font-size: min(2.8dvh, 2.8vw);
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.alert-description {
+  font-size: min(2dvh, 2vw);
+  line-height: 1.3;
+  opacity: 0.95;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.weather-dashboard.nothing-style .alert-headline,
+.weather-dashboard.nothing-style .alert-description {
+  font-family: "Dogica", monospace;
+  letter-spacing: 0.05em;
+}

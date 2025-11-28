@@ -50,7 +50,8 @@ LABELS = {
         "uv_index": "紫外线",
         "visibility": "能见度",
         "air_quality": "空气质量",
-        "last_refresh": "最后更新"
+        "last_refresh": "最后更新",
+        "weather_alert": "天气预警"
     },
     "en": {
         "feels_like": "Feels Like",
@@ -62,7 +63,8 @@ LABELS = {
         "uv_index": "UV Index",
         "visibility": "Visibility",
         "air_quality": "Air Quality",
-        "last_refresh": "Last refresh"
+        "last_refresh": "Last refresh",
+        "weather_alert": "Weather Alert"
     }
 }
 
@@ -188,6 +190,7 @@ class QWeather(BasePlugin):
             daily_forecast = self.get_daily_forecast(host, api_key, location_id, units)
             hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
             air_quality = self.get_air_quality(host, api_key, location_id)
+            weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
 
             if not title:
                 title = weather_data.get('location_name', '')
@@ -197,6 +200,7 @@ class QWeather(BasePlugin):
                 daily_forecast,
                 hourly_forecast,
                 air_quality,
+                weather_alerts,
                 tz,
                 units,
                 time_format,
@@ -339,7 +343,29 @@ class QWeather(BasePlugin):
 
         return {}
 
-    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
+    def get_weather_alerts(self, host, api_key, lat, long):
+        url = f"{host}/weatheralert/v1/current/{lat}/{long}"
+        params = {
+            "key": api_key
+        }
+        response = requests.get(url, params=params)
+
+        if response.status_code != 200:
+            logger.error(f"Failed to get weather alerts: {response.content}")
+            return []
+
+        try:
+            data = response.json()
+            alerts = data.get('alerts', [])
+            if alerts:
+                logger.info(f"Found {len(alerts)} weather alert(s)")
+            return alerts
+        except Exception as e:
+            logger.error(f"Failed to parse weather alerts response: {e}")
+
+        return []
+
+    def parse_weather_data(self, weather_data, daily_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default"):
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
@@ -365,6 +391,7 @@ class QWeather(BasePlugin):
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
         data['hourly_forecast'] = self.parse_hourly(hourly_forecast, tz, time_format, units)
+        data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
         return data, sunrise_dt, sunset_dt
 
@@ -566,3 +593,38 @@ class QWeather(BasePlugin):
                 return now < sunrise_dt or now >= sunset_dt
             return False
         return False
+
+    def parse_weather_alerts(self, alerts, language="zh"):
+        if not alerts:
+            return []
+
+        severity_colors = {
+            "extreme": {"bg": "#8B0000", "text": "#FFFFFF"},
+            "severe": {"bg": "#FF4500", "text": "#FFFFFF"},
+            "moderate": {"bg": "#FFA500", "text": "#000000"},
+            "minor": {"bg": "#FFD700", "text": "#000000"}
+        }
+
+        parsed_alerts = []
+        for alert in alerts[:3]:
+            severity = alert.get('severity', 'minor')
+            colors = severity_colors.get(severity, severity_colors['minor'])
+
+            event_name = alert.get('eventType', {}).get('name', '')
+            headline = alert.get('headline', event_name)
+            description = alert.get('description', '')
+
+            if language == "en" and not headline:
+                headline = alert.get('eventType', {}).get('code', 'Weather Alert')
+
+            parsed_alerts.append({
+                'headline': headline,
+                'description': description[:200] if description else '',
+                'severity': severity,
+                'bg_color': colors['bg'],
+                'text_color': colors['text'],
+                'issued_time': alert.get('issuedTime', ''),
+                'expire_time': alert.get('expireTime', '')
+            })
+
+        return parsed_alerts
