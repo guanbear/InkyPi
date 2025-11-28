@@ -42,13 +42,6 @@ def plugin_page(plugin_id):
     else:
         return "Plugin not found", 404
 
-@plugin_bp.route('/images/qweather/<filename>')
-def qweather_image(filename):
-    # Serve QWeather SVG icons from static/images/qweather
-    from flask import current_app, send_from_directory
-    qweather_dir = os.path.join(current_app.root_path, 'static', 'images', 'qweather')
-    return send_from_directory(qweather_dir, filename)
-
 @plugin_bp.route('/images/<plugin_id>/<path:filename>')
 def image(plugin_id, filename):
     # Resolve plugins directory dynamically
