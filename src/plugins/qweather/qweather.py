@@ -837,9 +837,7 @@ class QWeather(BasePlugin):
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
                 "unit": aqi_category,
-                "icon": "",  # Remove icon, will display as text
-                "aqi_color": aqi_color,
-                "is_aqi": True
+                "icon": self.get_plugin_dir('icons/aqi.png')  # Keep original icon
             })
 
         return data_points, sunrise_dt, sunset_dt
@@ -854,13 +852,13 @@ class QWeather(BasePlugin):
         except (ValueError, TypeError):
             return None
             
-        # AQI color standards
+        # AQI color standards - darker colors for better visibility
         if aqi <= 50:
-            return "#00FF00"  # Green - Good
+            return "#00CC00"  # Darker Green - Good
         elif aqi <= 100:
-            return "#FFFF00"  # Yellow - Moderate  
+            return "#E6B800"  # Darker Yellow - Moderate  
         elif aqi <= 150:
-            return "#FF7E00"  # Orange - Unhealthy for Sensitive
+            return "#FF6600"  # Orange - Unhealthy for Sensitive
         elif aqi <= 200:
             return "#FF0000"  # Red - Unhealthy
         elif aqi <= 300:

@@ -112,30 +112,12 @@
   filter: brightness(0) invert(1) contrast(1.2) saturate(1.3);
 }
 
-/* AQI Text Display */
-.data-point-aqi-container {
-  width: 25%;
-  height: 80%;
-  align-content: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.aqi-text {
-  font-size: 2.5cqmin;
-  font-weight: bold;
-  text-align: center;
-  line-height: 1;
-}
-
-.aqi-value {
-  font-weight: bold !important;
-}
-
-.aqi-unit {
-  font-weight: normal !important;
-  font-size: 0.8em !important;
+/* AQI Icon Specific Styling */
+.aqi-icon {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  align-self: center;
 }
 
 .weather-dashboard.nothing-style .current-icon,
