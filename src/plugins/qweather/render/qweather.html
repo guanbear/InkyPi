@@ -47,18 +47,11 @@
     <div class="data-points">
       {% for dp in data_points %}
         <div class="data-point column-container">
-          {% if dp.icon and 'aqi.png' in dp.icon %}
-            <!-- AQI Icon with color filter -->
-            <div class="data-point-img-container">
-              <img class="data-point-icon aqi-icon" src="{{dp.icon}}" alt="{{ dp.label }}" 
-                   style="filter: {% if air_quality and air_quality.aqi %}hue-rotate({{ 60 - (air_quality.aqi|int * 0.2) }}deg){% endif %};">
-            </div>
-          {% else %}
-            <!-- Regular Icon -->
-            <div class="data-point-img-container">
-              <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
-            </div>
-          {% endif %}
+          <div class="data-point-img-container">
+            <img class="data-point-icon{% if dp.icon and 'aqi_custom.svg' in dp.icon %} aqi-icon{% endif %}" 
+                 src="{{dp.icon}}" alt="{{ dp.label }}"
+                 {% if dp.aqi_color %}style="filter: url(#aqi-tint-{{ loop.index }});"{% endif %}>
+          </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
             <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}
@@ -68,6 +61,20 @@
         </div>
       {% endfor %}
     </div>
+
+    <!-- SVG Filters for AQI Color Tinting -->
+    <svg style="display: none;">
+      {% for dp in data_points %}
+        {% if dp.icon and 'aqi_custom.svg' in dp.icon and dp.aqi_color %}
+        <filter id="aqi-tint-{{ loop.index }}">
+          <feColorMatrix type="matrix" values="0 0 0 0 {{ dp.aqi_color[1:3]|int / 255 }} 
+                                                 0 0 0 0 {{ dp.aqi_color[3:5]|int / 256 }}
+                                                 0 0 0 0 {{ dp.aqi_color[5:7]|int / 256 }}
+                                                 0 0 1 0"/>
+        </filter>
+        {% endif %}
+      {% endfor %}
+    </svg>
     {% endif %}
   </div>
 

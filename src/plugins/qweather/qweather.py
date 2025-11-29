@@ -833,11 +833,14 @@ class QWeather(BasePlugin):
             aqi = air_quality.get('aqi', 'N/A')
             aqi_category = air_quality.get('category', '')
             aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
+            # Use custom AQI SVG icon for better color control
+            aqi_icon_path = self.get_plugin_dir('icons/aqi_custom.svg') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
             data_points.append({
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
                 "unit": aqi_category,
-                "icon": self.get_plugin_dir('icons/aqi.png')  # Keep original icon
+                "icon": aqi_icon_path,
+                "aqi_color": aqi_color
             })
 
         return data_points, sunrise_dt, sunset_dt
