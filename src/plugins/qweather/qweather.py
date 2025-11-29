@@ -8,6 +8,21 @@ from astral import moon
 import pytz
 from io import BytesIO
 import math
+import hashlib
+import tempfile
+from pathlib import Path
+try:
+    from cairosvg import svg2png
+    CAIROSVG_AVAILABLE = True
+except ImportError:
+    CAIROSVG_AVAILABLE = False
+    logger.warning("cairosvg not available, SVG to PNG conversion disabled")
+try:
+    from lxml import etree
+    LXML_AVAILABLE = True
+except ImportError:
+    LXML_AVAILABLE = False
+    logger.warning("lxml not available, SVG color manipulation disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +155,109 @@ QWEATHER_ICON_MAP = {
 }
 
 class QWeather(BasePlugin):
+    def __init__(self):
+        super().__init__()
+        self._cache_dir = Path(tempfile.gettempdir()) / "inkypi_qweather_cache"
+        self._cache_dir.mkdir(exist_ok=True)
+    def convert_svg_to_png(self, svg_path, output_size=(64, 64), is_dark_mode=False):
+        """
+        Convert SVG to PNG with theme-aware color adaptation.
+        
+        Args:
+            svg_path: Path to the SVG file
+            output_size: Tuple of (width, height) for output PNG
+            is_dark_mode: Whether to apply dark theme colors
+            
+        Returns:
+            Path to the converted PNG file, or fallback PNG path if conversion fails
+        """
+        if not CAIROSVG_AVAILABLE:
+            logger.warning("cairosvg not available, using fallback PNG")
+            return self.get_plugin_dir('icons/01d.png')
+            
+        try:
+            # Create cache key based on SVG path, size, and theme
+            cache_key = f"{svg_path.name}_{output_size[0]}x{output_size[1]}_{'dark' if is_dark_mode else 'light'}"
+            cache_file = self._cache_dir / f"{hashlib.md5(cache_key.encode()).hexdigest()}.png"
+            
+            # Check cache first
+            if cache_file.exists():
+                logger.debug(f"Using cached PNG: {cache_file}")
+                return str(cache_file)
+            
+            # Read SVG content
+            with open(svg_path, 'r', encoding='utf-8') as f:
+                svg_content = f.read()
+            
+            # Apply theme-aware color changes if needed
+            if is_dark_mode and LXML_AVAILABLE:
+                svg_content = self._adapt_svg_colors(svg_content, is_dark_mode)
+            
+            # Convert SVG to PNG
+            png_data = svg2png(
+                bytestring=svg_content.encode('utf-8'),
+                output_width=output_size[0],
+                output_height=output_size[1],
+                background_color=None  # Transparent background
+            )
+            
+            # Save to cache
+            with open(cache_file, 'wb') as f:
+                f.write(png_data)
+                
+            logger.info(f"Successfully converted SVG to PNG: {svg_path} -> {cache_file}")
+            return str(cache_file)
+            
+        except Exception as e:
+            logger.error(f"Failed to convert SVG {svg_path} to PNG: {e}")
+            # Return fallback icon
+            return self.get_plugin_dir('icons/01d.png')
+    
+    def _adapt_svg_colors(self, svg_content, is_dark_mode):
+        """
+        Adapt SVG colors for dark/light theme.
+        
+        Args:
+            svg_content: SVG content as string
+            is_dark_mode: Whether to apply dark theme colors
+            
+        Returns:
+            Modified SVG content
+        """
+        try:
+            # Parse SVG
+            parser = etree.XMLParser(remove_blank_text=True)
+            root = etree.fromstring(svg_content.encode('utf-8'), parser)
+            
+            if is_dark_mode:
+                # Dark theme: use lighter colors
+                color_map = {
+                    'currentColor': '#FFFFFF',
+                    '#000000': '#FFFFFF',
+                    '#333333': '#CCCCCC',
+                    '#666666': '#999999'
+                }
+            else:
+                # Light theme: use darker colors  
+                color_map = {
+                    'currentColor': '#000000',
+                    '#FFFFFF': '#000000',
+                    '#CCCCCC': '#333333',
+                    '#999999': '#666666'
+                }
+            
+            # Apply color changes
+            for elem in root.iter():
+                for attr in ['fill', 'stroke']:
+                    if attr in elem.attrib:
+                        value = elem.attrib[attr]
+                        if value in color_map:
+                            elem.attrib[attr] = color_map[value]
+                        elif value == 'currentColor':
+                            elem.attrib[attr] = color_map['currentColor']
+            
+            # Return modified SVG
+
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
@@ -491,7 +609,23 @@ class QWeather(BasePlugin):
 
         data = {
             "current_date": current_date,
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png') if display_style != "qweather" else self.get_plugin_dir(f'icons/qweather/{current_icon}'),
+        # Handle icon conversion for qweather style
+        if display_style == "qweather":
+            # Convert SVG to PNG for better screenshot compatibility
+            svg_path = self.get_plugin_dir(f'icons/qweather/{current_icon}.svg')
+            if os.path.exists(svg_path):
+                converted_icon = self.convert_svg_to_png(
+                    Path(svg_path), 
+                    output_size=(64, 64), 
+                    is_dark_mode=self.determine_theme(theme_mode, None, None, tz) if sunrise_dt and sunset_dt else False
+                )
+                data["current_day_icon"] = converted_icon
+            else:
+                # Fallback to PNG if SVG doesn't exist
+                data["current_day_icon"] = self.get_plugin_dir(f'icons/{current_icon}.png')
+                logger.warning(f"SVG icon not found: {svg_path}, using PNG fallback")
+        else:
+            data["current_day_icon"] = self.get_plugin_dir(f'icons/{current_icon}.png')
             "current_day_icon_code": current_icon if display_style == "qweather" else "",
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
@@ -561,7 +695,24 @@ class QWeather(BasePlugin):
 
         for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
-            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png") if display_style != "qweather" else self.get_plugin_dir(f"icons/qweather/{weather_icon}")
+            
+            # Handle icon conversion for qweather style
+            if display_style == "qweather":
+                svg_path = self.get_plugin_dir(f'icons/qweather/{weather_icon}.svg')
+                if os.path.exists(svg_path):
+                    converted_icon = self.convert_svg_to_png(
+                        Path(svg_path), 
+                        output_size=(48, 48), 
+                        is_dark_mode=settings and settings.get('themeMode') == 'dark'
+                    )
+                    weather_icon_path = converted_icon
+                else:
+                    # Fallback to PNG if SVG doesn't exist
+                    weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+                    logger.warning(f"SVG icon not found: {svg_path}, using PNG fallback")
+            else:
+                weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+                
             weather_icon_code = weather_icon if display_style == "qweather" else ""
 
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
@@ -586,7 +737,24 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png") if display_style != "qweather" else self.get_plugin_dir(f"icons/qweather/{phase_name}")
+            # Handle moon phase icon conversion for qweather style
+            if display_style == "qweather" and settings and settings.get('moonPhase') == "":
+                # Moon phase icons don't exist in qweather SVG format, use PNG
+                moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            elif display_style == "qweather" and settings and settings.get('moonPhase') == "true":
+                # Check if we have SVG version of moon phase icon
+                svg_moon_path = self.get_plugin_dir(f'icons/qweather/{phase_name}.svg')
+                if os.path.exists(svg_moon_path):
+                    converted_moon_icon = self.convert_svg_to_png(
+                        Path(svg_moon_path), 
+                        output_size=(24, 24), 
+                        is_dark_mode=settings.get('themeMode') == 'dark'
+                    )
+                    moon_icon_path = converted_moon_icon
+                else:
+                    moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            else:
+                moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
             moon_icon_code = phase_name if (display_style == "qweather" and settings and settings.get('moonPhase') == "true") else ""
 
             forecast.append({
