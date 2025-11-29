@@ -18,7 +18,7 @@
     <div class="header-bottom-row">
       {% if weather_alerts and weather_alerts|length > 0 %}
       <div class="weather-alerts-inline">
-        {% for alert in weather_alerts %}
+        {% for alert in weather_alerts[:1] %}
           <div class="weather-alert-inline" style="background-color: {{ alert.bg_color }}; color: {{ alert.text_color }};">
             <span class="alert-icon-inline">⚠</span>
             <span class="alert-headline-inline">{{ alert.headline }}</span>

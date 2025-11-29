@@ -179,6 +179,8 @@ def optimize_for_e6_display(image, display_type):
 
     image = image.convert('RGB')
 
+    # Spectra 6 (E6) color palette - optimized for 7.3" displays
+    # Order: Black, White, Yellow, Red, Blue, Green
     e6_palette = [
         0, 0, 0,        # Black
         255, 255, 255,  # White
@@ -191,9 +193,17 @@ def optimize_for_e6_display(image, display_type):
     palette_image = Image.new('P', (1, 1))
     palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
 
-    enhanced = ImageEnhance.Contrast(image).enhance(1.15)
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.1)
+    # Enhanced image processing for better E6 display quality
+    # 1.大幅提升饱和度 - 墨水屏色彩淡，必须在转换前把颜色"拉爆"
+    enhanced = ImageEnhance.Color(image).enhance(1.8)  # 加80%饱和度
+    
+    # 2.提升对比度，防止画面发灰
+    enhanced = ImageEnhance.Contrast(enhanced).enhance(1.3)
+    
+    # 3.锐化，增加清晰度
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.5)
 
+    # 4.使用Floyd-Steinberg抖动算法进行色彩量化
     optimized = enhanced.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
 
     return optimized.convert('RGB')
