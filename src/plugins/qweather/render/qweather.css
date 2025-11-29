@@ -87,11 +87,15 @@
   object-fit: contain !important;
 }
 
-/* Dark mode icon color adaptation */
+/* Dark mode icon color adaptation - exclude data point icons */
 .weather-dashboard.dark-mode.qweather-style .current-icon,
-.weather-dashboard.dark-mode.qweather-style .forecast-icon,
-.weather-dashboard.dark-mode.qweather-style .data-point-icon {
+.weather-dashboard.dark-mode.qweather-style .forecast-icon {
   filter: brightness(0) invert(1) contrast(1.2) saturate(1.3);
+}
+
+/* Keep data point icons colorful in dark mode (sunrise, sunset, pressure, etc.) */
+.weather-dashboard.dark-mode.qweather-style .data-point-icon {
+  filter: contrast(1.2) saturate(1.3);
 }
 
 .weather-dashboard.nothing-style .current-icon,
