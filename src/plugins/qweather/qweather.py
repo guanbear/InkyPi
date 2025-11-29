@@ -257,6 +257,11 @@ class QWeather(BasePlugin):
                             elem.attrib[attr] = color_map['currentColor']
             
             # Return modified SVG
+            return etree.tostring(root, encoding='unicode', pretty_print=True)
+            
+        except Exception as e:
+            logger.warning(f"Failed to adapt SVG colors: {e}")
+            return svg_content
 
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
@@ -608,16 +613,18 @@ class QWeather(BasePlugin):
             current_date = datetime.now(tz).strftime("%A, %B %d")
 
         data = {
-            "current_date": current_date,
+        }
+
         # Handle icon conversion for qweather style
         if display_style == "qweather":
             # Convert SVG to PNG for better screenshot compatibility
             svg_path = self.get_plugin_dir(f'icons/qweather/{current_icon}.svg')
             if os.path.exists(svg_path):
+                is_dark_mode = self.determine_theme(theme_mode, sunrise_dt, sunset_dt, tz)
                 converted_icon = self.convert_svg_to_png(
                     Path(svg_path), 
                     output_size=(64, 64), 
-                    is_dark_mode=self.determine_theme(theme_mode, None, None, tz) if sunrise_dt and sunset_dt else False
+                    is_dark_mode=is_dark_mode
                 )
                 data["current_day_icon"] = converted_icon
             else:
@@ -626,13 +633,15 @@ class QWeather(BasePlugin):
                 logger.warning(f"SVG icon not found: {svg_path}, using PNG fallback")
         else:
             data["current_day_icon"] = self.get_plugin_dir(f'icons/{current_icon}.png')
+
+        data.update({
             "current_day_icon_code": current_icon if display_style == "qweather" else "",
             "current_temperature": str(round(current_temp)),
             "feels_like": str(round(feels_like)),
             "temperature_unit": UNITS[units]["temperature"],
             "units": units,
             "time_format": time_format
-        }
+        })
 
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
