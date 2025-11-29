@@ -155,8 +155,8 @@ QWEATHER_ICON_MAP = {
 }
 
 class QWeather(BasePlugin):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config, **dependencies):
+        super().__init__(config, **dependencies)
         self._cache_dir = Path(tempfile.gettempdir()) / "inkypi_qweather_cache"
         self._cache_dir.mkdir(exist_ok=True)
     def convert_svg_to_png(self, svg_path, output_size=(64, 64), is_dark_mode=False):
