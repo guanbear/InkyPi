@@ -8,21 +8,6 @@ from astral import moon
 import pytz
 from io import BytesIO
 import math
-import hashlib
-import tempfile
-from pathlib import Path
-try:
-    from cairosvg import svg2png
-    CAIROSVG_AVAILABLE = True
-except ImportError:
-    CAIROSVG_AVAILABLE = False
-    logger.warning("cairosvg not available, SVG to PNG conversion disabled")
-try:
-    from lxml import etree
-    LXML_AVAILABLE = True
-except ImportError:
-    LXML_AVAILABLE = False
-    logger.warning("lxml not available, SVG color manipulation disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -155,114 +140,6 @@ QWEATHER_ICON_MAP = {
 }
 
 class QWeather(BasePlugin):
-    def __init__(self, config, **dependencies):
-        super().__init__(config, **dependencies)
-        self._cache_dir = Path(tempfile.gettempdir()) / "inkypi_qweather_cache"
-        self._cache_dir.mkdir(exist_ok=True)
-    def convert_svg_to_png(self, svg_path, output_size=(64, 64), is_dark_mode=False):
-        """
-        Convert SVG to PNG with theme-aware color adaptation.
-        
-        Args:
-            svg_path: Path to the SVG file
-            output_size: Tuple of (width, height) for output PNG
-            is_dark_mode: Whether to apply dark theme colors
-            
-        Returns:
-            Path to the converted PNG file, or fallback PNG path if conversion fails
-        """
-        if not CAIROSVG_AVAILABLE:
-            logger.warning("cairosvg not available, using fallback PNG")
-            return self.get_plugin_dir('icons/01d.png')
-            
-        try:
-            # Create cache key based on SVG path, size, and theme
-            cache_key = f"{svg_path.name}_{output_size[0]}x{output_size[1]}_{'dark' if is_dark_mode else 'light'}"
-            cache_file = self._cache_dir / f"{hashlib.md5(cache_key.encode()).hexdigest()}.png"
-            
-            # Check cache first
-            if cache_file.exists():
-                logger.debug(f"Using cached PNG: {cache_file}")
-                return str(cache_file)
-            
-            # Read SVG content
-            with open(svg_path, 'r', encoding='utf-8') as f:
-                svg_content = f.read()
-            
-            # Apply theme-aware color changes if needed
-            if is_dark_mode and LXML_AVAILABLE:
-                svg_content = self._adapt_svg_colors(svg_content, is_dark_mode)
-            
-            # Convert SVG to PNG
-            png_data = svg2png(
-                bytestring=svg_content.encode('utf-8'),
-                output_width=output_size[0],
-                output_height=output_size[1],
-                background_color=None  # Transparent background
-            )
-            
-            # Save to cache
-            with open(cache_file, 'wb') as f:
-                f.write(png_data)
-                
-            logger.info(f"Successfully converted SVG to PNG: {svg_path} -> {cache_file}")
-            return str(cache_file)
-            
-        except Exception as e:
-            logger.error(f"Failed to convert SVG {svg_path} to PNG: {e}")
-            # Return fallback icon
-            return self.get_plugin_dir('icons/01d.png')
-    
-    def _adapt_svg_colors(self, svg_content, is_dark_mode):
-        """
-        Adapt SVG colors for dark/light theme.
-        
-        Args:
-            svg_content: SVG content as string
-            is_dark_mode: Whether to apply dark theme colors
-            
-        Returns:
-            Modified SVG content
-        """
-        try:
-            # Parse SVG
-            parser = etree.XMLParser(remove_blank_text=True)
-            root = etree.fromstring(svg_content.encode('utf-8'), parser)
-            
-            if is_dark_mode:
-                # Dark theme: use lighter colors
-                color_map = {
-                    'currentColor': '#FFFFFF',
-                    '#000000': '#FFFFFF',
-                    '#333333': '#CCCCCC',
-                    '#666666': '#999999'
-                }
-            else:
-                # Light theme: use darker colors  
-                color_map = {
-                    'currentColor': '#000000',
-                    '#FFFFFF': '#000000',
-                    '#CCCCCC': '#333333',
-                    '#999999': '#666666'
-                }
-            
-            # Apply color changes
-            for elem in root.iter():
-                for attr in ['fill', 'stroke']:
-                    if attr in elem.attrib:
-                        value = elem.attrib[attr]
-                        if value in color_map:
-                            elem.attrib[attr] = color_map[value]
-                        elif value == 'currentColor':
-                            elem.attrib[attr] = color_map['currentColor']
-            
-            # Return modified SVG
-            return etree.tostring(root, encoding='unicode', pretty_print=True)
-            
-        except Exception as e:
-            logger.warning(f"Failed to adapt SVG colors: {e}")
-            return svg_content
-
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
