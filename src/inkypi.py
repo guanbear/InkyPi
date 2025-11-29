@@ -3,7 +3,12 @@
 # set up logging
 import os, logging.config
 
-from pi_heif import register_heif_opener
+# Try to import pi_heif for HEIF support, but don't fail if not available
+try:
+    from pi_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    logging.getLogger(__name__).warning("pi_heif not available - HEIF/HEIC images won't be supported")
 
 logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
 
