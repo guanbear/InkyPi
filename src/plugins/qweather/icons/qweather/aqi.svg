@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="qi-aqi" viewBox="0 0 16 16">
+  <!-- 简单的空气质量图标 - 4个圆角矩形表示4个污染等级 -->
+  <rect x="2" y="4" width="3" height="8" rx="0.5" />
+  <rect x="6.5" y="4" width="3" height="8" rx="0.5" />
+  <rect x="11" y="4" width="3" height="8" rx="0.5" />
+  <text x="8" y="12" text-anchor="middle" font-family="sans-serif" font-size="2" font-weight="bold">AQI</text>
+</svg>
