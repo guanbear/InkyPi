@@ -47,12 +47,22 @@
     <div class="data-points">
       {% for dp in data_points %}
         <div class="data-point column-container">
-          <div class="data-point-img-container">
-            <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
-          </div>
+          {% if dp.is_aqi %}
+            <!-- AQI Display as Text -->
+            <div class="data-point-aqi-container">
+              <div class="aqi-text" style="color: {{ dp.aqi_color or plugin_settings.textColor }};">AQI</div>
+            </div>
+          {% else %}
+            <!-- Regular Icon -->
+            <div class="data-point-img-container">
+              <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
+            </div>
+          {% endif %}
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
-            <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
+            <div class="data-point-measurement{% if dp.is_aqi %} aqi-value{% endif %}" {% if dp.aqi_color %}style="color: {{ dp.aqi_color }};"{% endif %}>
+              {{ dp.measurement }}{% if dp.unit %}
+              <span class="data-point-unit{% if dp.is_aqi %} aqi-unit{% endif %}" {% if dp.aqi_color %}style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.unit }}</span>{% endif %}
             </div>
           </div>
         </div>

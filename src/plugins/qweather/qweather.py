@@ -832,14 +832,41 @@ class QWeather(BasePlugin):
         if air_quality:
             aqi = air_quality.get('aqi', 'N/A')
             aqi_category = air_quality.get('category', '')
+            aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
             data_points.append({
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
                 "unit": aqi_category,
-                "icon": self.get_plugin_dir('icons/aqi.png')
+                "icon": "",  # Remove icon, will display as text
+                "aqi_color": aqi_color,
+                "is_aqi": True
             })
 
         return data_points, sunrise_dt, sunset_dt
+
+    def get_aqi_color(self, aqi_value):
+        """Return color based on AQI value"""
+        if aqi_value == 'N/A':
+            return None
+        
+        try:
+            aqi = int(aqi_value)
+        except (ValueError, TypeError):
+            return None
+            
+        # AQI color standards
+        if aqi <= 50:
+            return "#00FF00"  # Green - Good
+        elif aqi <= 100:
+            return "#FFFF00"  # Yellow - Moderate  
+        elif aqi <= 150:
+            return "#FF7E00"  # Orange - Unhealthy for Sensitive
+        elif aqi <= 200:
+            return "#FF0000"  # Red - Unhealthy
+        elif aqi <= 300:
+            return "#8F3F97"  # Purple - Very Unhealthy
+        else:
+            return "#7E0023"  # Maroon - Hazardous
 
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         if time_format == "24h":
