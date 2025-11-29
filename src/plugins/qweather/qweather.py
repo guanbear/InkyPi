@@ -616,27 +616,18 @@ class QWeather(BasePlugin):
             "current_date": current_date,
         }
 
-        # Handle icon for qweather style - DEBUG: Use SVG directly
+        # Handle icon for qweather style
         if display_style == "qweather":
-            svg_path = self.get_plugin_dir(f'icons/qweather/{current_icon}.svg')
-            logger.info(f"DEBUG: Looking for SVG at: {svg_path}")
-            logger.info(f"DEBUG: SVG exists: {os.path.exists(svg_path)}")
-            
+            # Fixed: Remove duplicate qweather in path
+            svg_path = self.get_plugin_dir(f'icons/{current_icon}.svg')
             if os.path.exists(svg_path):
-                # DEBUG: Use SVG directly without conversion
                 data["current_day_icon"] = svg_path
-                logger.info(f"DEBUG: Using SVG path: {data['current_day_icon']}")
             else:
                 # Fallback to PNG if SVG doesn't exist
                 data["current_day_icon"] = self.get_plugin_dir(f'icons/{current_icon}.png')
                 logger.warning(f"SVG icon not found: {svg_path}, using PNG fallback: {data['current_day_icon']}")
         else:
             data["current_day_icon"] = self.get_plugin_dir(f'icons/{current_icon}.png')
-            logger.info(f"DEBUG: Using PNG path (non-qweather): {data['current_day_icon']}")
-
-        # DEBUG: Log final data
-        logger.info(f"DEBUG: Final current_day_icon: {data.get('current_day_icon')}")
-        logger.info(f"DEBUG: Final current_day_icon exists: {os.path.exists(data.get('current_day_icon', ''))}")
 
         data.update({
             "current_day_icon_code": current_icon if display_style == "qweather" else "",
@@ -709,16 +700,11 @@ class QWeather(BasePlugin):
         for idx, day in enumerate(daily_forecast):
             weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
             
-            # Handle icon conversion for qweather style
+            # Handle icon for qweather style - Fixed path
             if display_style == "qweather":
-                svg_path = self.get_plugin_dir(f'icons/qweather/{weather_icon}.svg')
+                svg_path = self.get_plugin_dir(f'icons/{weather_icon}.svg')
                 if os.path.exists(svg_path):
-                    converted_icon = self.convert_svg_to_png(
-                        Path(svg_path), 
-                        output_size=(48, 48), 
-                        is_dark_mode=settings and settings.get('themeMode') == 'dark'
-                    )
-                    weather_icon_path = converted_icon
+                    weather_icon_path = svg_path
                 else:
                     # Fallback to PNG if SVG doesn't exist
                     weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
@@ -750,20 +736,12 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            # Handle moon phase icon conversion for qweather style
-            if display_style == "qweather" and settings and settings.get('moonPhase') == "":
-                # Moon phase icons don't exist in qweather SVG format, use PNG
-                moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
-            elif display_style == "qweather" and settings and settings.get('moonPhase') == "true":
+            # Handle moon phase icon for qweather style - Fixed path
+            if display_style == "qweather" and settings and settings.get('moonPhase') == "true":
                 # Check if we have SVG version of moon phase icon
-                svg_moon_path = self.get_plugin_dir(f'icons/qweather/{phase_name}.svg')
+                svg_moon_path = self.get_plugin_dir(f'icons/{phase_name}.svg')
                 if os.path.exists(svg_moon_path):
-                    converted_moon_icon = self.convert_svg_to_png(
-                        Path(svg_moon_path), 
-                        output_size=(24, 24), 
-                        is_dark_mode=settings.get('themeMode') == 'dark'
-                    )
-                    moon_icon_path = converted_moon_icon
+                    moon_icon_path = svg_moon_path
                 else:
                     moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
             else:

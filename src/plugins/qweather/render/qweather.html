@@ -5,22 +5,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
 
-<!-- DEBUG INFO -->
-<div style="background: #ffff99; border: 2px solid red; padding: 10px; margin: 5px; font-size: 12px; font-family: monospace;">
-    <h3>🔍 DEBUG SVG INFORMATION</h3>
-    <p><strong>Current Icon Path:</strong> {{ current_day_icon }}</p>
-    <p><strong>Display Style:</strong> {{ display_style }}</p>
-    <p><strong>Dark Mode:</strong> {{ dark_mode }}</p>
-    <p><strong>Icon Code:</strong> {{ current_day_icon_code }}</p>
-    <div style="border: 1px solid black; padding: 5px; margin: 5px;">
-        <p><strong>Test Direct SVG:</strong></p>
-        <img src="{{ current_day_icon }}" style="border: 2px solid blue; width: 32px; height: 32px;" alt="Debug SVG">
-        {% if current_day_icon %}
-        <p><strong>File Size:</strong> {% if current_day_icon %}{{ current_day_icon | length }} chars{% else %}N/A{% endif %}</p>
-        {% endif %}
-    </div>
-</div>
-
 <div id="units-container" data-units="{{ units }}"></div>
 
 
