@@ -50,7 +50,7 @@
           <div class="data-point-img-container">
             <img class="data-point-icon{% if dp.icon and 'air-quality.png' in dp.icon %} aqi-icon{% endif %}" 
                  src="{{dp.icon}}" alt="{{ dp.label }}"
-                 {% if dp.aqi_color %}style="filter: hue-rotate({{ (dp.aqi_color[1:3]|int - 120) * 1.5 }}deg) saturate(1.5);"{% endif %}>
+                 {% if dp.aqi_color %}style="filter: hue-rotate({{ ((dp.aqi_color[2:4]|int - 0) / 255 * 360 - 180) }}deg) saturate(1.5);"{% endif %}>
           </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
