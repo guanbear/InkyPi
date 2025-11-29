@@ -758,6 +758,8 @@ class QWeather(BasePlugin):
         sunrise_dt = None
         sunset_dt = None
 
+        logger.info(f"parse_data_points called with display_style: {display_style}")
+
         sunrise_str = today_forecast.get('sunrise')
         if sunrise_str:
             sunrise_dt = datetime.strptime(sunrise_str, "%H:%M").replace(
@@ -835,6 +837,7 @@ class QWeather(BasePlugin):
             aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
             # Use the new air-quality.png icon for qweather style
             aqi_icon_path = self.get_plugin_dir('icons/air-quality.png') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
+            logger.info(f"AQI icon path selected: {aqi_icon_path}, display_style: {display_style}")
             data_points.append({
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
