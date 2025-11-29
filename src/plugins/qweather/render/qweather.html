@@ -49,13 +49,12 @@
         <div class="data-point column-container">
           <div class="data-point-img-container">
             <img class="data-point-icon{% if dp.icon and 'air-quality.png' in dp.icon %} aqi-icon{% endif %}" 
-                 src="{{dp.icon}}" alt="{{ dp.label }}"
-                 {% if dp.aqi_color %}style="background-color: {{ dp.aqi_color }}; filter: brightness(1.2);"{% endif %}>
+                 src="{{dp.icon}}" alt="{{ dp.label }}">
           </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
-            <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}
-              <span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
+            <div class="data-point-measurement"{% if dp.aqi_color %} style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.measurement }}{% if dp.unit %}
+              <span class="data-point-unit"{% if dp.aqi_color %} style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.unit }}</span>{% endif %}
             </div>
           </div>
         </div>
