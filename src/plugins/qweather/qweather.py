@@ -516,7 +516,7 @@ class QWeather(BasePlugin):
         })
 
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings)
-        data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language)
+        data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language, display_style)
         data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
@@ -753,7 +753,7 @@ class QWeather(BasePlugin):
         logger.info(f"Merged forecast: {len(merged)} data points")
         return merged[:24]
 
-    def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh"):
+    def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
         data_points = []
         sunrise_dt = None
         sunset_dt = None
