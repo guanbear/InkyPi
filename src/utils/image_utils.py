@@ -194,14 +194,17 @@ def optimize_for_e6_display(image, display_type):
     palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
 
     # Enhanced image processing for better E6 display quality
-    # 1.大幅提升饱和度 - 墨水屏色彩淡，必须在转换前把颜色"拉爆"
-    enhanced = ImageEnhance.Color(image).enhance(1.8)  # 加80%饱和度
+    # Waveshare official recommended settings
+    enhanced = ImageEnhance.Color(image).enhance(1.2)  # Saturation: 1.2
     
-    # 2.提升对比度，防止画面发灰
-    enhanced = ImageEnhance.Contrast(enhanced).enhance(1.3)
+    # Normal contrast for better color accuracy
+    enhanced = ImageEnhance.Contrast(enhanced).enhance(1.0)  # Contrast: 1.0
     
-    # 3.锐化，增加清晰度
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.5)
+    # Slight sharpness improvement
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.1)  # Sharpness: 1.1
+    
+    # Normal brightness
+    enhanced = ImageEnhance.Brightness(enhanced).enhance(1.0)  # Brightness: 1.0
 
     # 4.使用Floyd-Steinberg抖动算法进行色彩量化
     optimized = enhanced.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)

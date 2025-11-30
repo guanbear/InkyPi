@@ -533,6 +533,29 @@
   }
 }
 
+/* Air Quality Display */
+.air-quality-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.air-quality-bar {
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+  min-width: 30px;
+  background-color: #E6B800; /* Default yellow */
+  color: white;
+  border: none;
+}
+
+.air-quality-bar.rounded {
+  border-radius: 4px;
+}
+
 /* Apple-Style Temperature Bars */
 .temp-bar-container {
   position: absolute;

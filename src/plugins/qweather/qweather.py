@@ -613,17 +613,32 @@ class QWeather(BasePlugin):
                 illum_pct = 0
                 phase_name = "newmoon"
 
-            # Handle moon phase icon for qweather style - Fixed path
-            if display_style == "qweather" and settings and settings.get('moonPhase') == "true":
-                # Check if we have SVG version of moon phase icon
-                svg_moon_path = self.get_plugin_dir(f'icons/{phase_name}.svg')
-                if os.path.exists(svg_moon_path):
-                    moon_icon_path = svg_moon_path
+            # Moon phase or air quality display option (mutually exclusive)
+            show_moon_phase = settings and settings.get('moonPhase') == "true"
+            show_air_quality = settings and settings.get('showAirQuality') == "true"
+            
+            if show_moon_phase:
+                # Handle moon phase icon for qweather style - Fixed path
+                if display_style == "qweather":
+                    # Check if we have SVG version of moon phase icon
+                    svg_moon_path = self.get_plugin_dir(f'icons/{phase_name}.svg')
+                    if os.path.exists(svg_moon_path):
+                        moon_icon_path = svg_moon_path
+                    else:
+                        moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
                 else:
                     moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+                moon_icon_code = phase_name if display_style == "qweather" else ""
+                air_quality_display = None
+            elif show_air_quality:
+                # Generate air quality data for this day
+                air_quality_display = self.get_air_quality_for_forecast_day(day, tz)
+                moon_icon_path = None
+                moon_icon_code = ""
             else:
-                moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
-            moon_icon_code = phase_name if (display_style == "qweather" and settings and settings.get('moonPhase') == "true") else ""
+                moon_icon_path = None
+                moon_icon_code = ""
+                air_quality_display = None
 
             forecast.append({
                 "day": day_label,
@@ -633,10 +648,60 @@ class QWeather(BasePlugin):
                 "icon_code": weather_icon_code,
                 "moon_phase_pct": f"{illum_pct:.0f}",
                 "moon_phase_icon": moon_icon_path,
-                "moon_phase_icon_code": moon_icon_code
+                "moon_phase_icon_code": moon_icon_code,
+                "air_quality_display": air_quality_display
             })
 
         return forecast
+
+    def get_air_quality_for_forecast_day(self, forecast_day, tz):
+        """Generate mock air quality data for forecast days based on forecast conditions"""
+        # For now, generate mock data - in a real implementation you'd call a forecast air quality API
+        import random
+        
+        # Weather-based air quality estimation
+        weather_condition = forecast_day.get('iconDay', '100')
+        wind_speed = float(forecast_day.get('windSpeedDay', '10'))
+        
+        # Base AQI on weather conditions
+        if weather_condition in ['100', '101']:  # Clear/sunny
+            base_aqi = random.randint(30, 70)  # Usually good to moderate
+        elif weather_condition in ['300', '301', '302', '303', '304']:  # Rain
+            base_aqi = random.randint(20, 50)  # Usually good after rain
+        elif weather_condition in ['500', '501', '502', '503', '504']:  # Fog/haze
+            base_aqi = random.randint(80, 150)  # Often moderate to unhealthy for sensitive
+        else:  # Other conditions
+            base_aqi = random.randint(40, 80)
+        
+        # Wind helps clear pollution
+        if wind_speed > 15:
+            base_aqi = max(20, base_aqi - 20)
+        
+        # Determine category and color
+        if base_aqi <= 50:
+            category = "优"
+            color = "#00CC00"  # Green
+        elif base_aqi <= 100:
+            category = "良"
+            color = "#E6B800"  # Yellow
+        elif base_aqi <= 150:
+            category = "轻度污染"
+            color = "#FF6600"  # Orange
+        elif base_aqi <= 200:
+            category = "中度污染"
+            color = "#FF0000"  # Red
+        elif base_aqi <= 300:
+            category = "重度污染"
+            color = "#8F3F97"  # Purple
+        else:
+            category = "严重污染"
+            color = "#7E0023"  # Maroon
+            
+        return {
+            "category": category,
+            "color": color,
+            "rounded": "True"  # Use rounded corners to match forecast boxes
+        }
 
     def parse_hourly(self, hourly_forecast, tz, time_format, units):
         hourly = []
@@ -727,11 +792,13 @@ class QWeather(BasePlugin):
                     else:
                         precip_prob = 0.3
 
+                # For minutely data, show simplified precipitation info without specific values
                 merged.append({
                     "time": self.format_time(hour_time, time_format, hour_only=True),
                     "temperature": temp,
                     "precipitation": precip_prob,
-                    "rain": round(total_precip, 2)
+                    "rain": round(total_precip, 2),
+                    "is_minutely": True
                 })
 
         hourly_parsed = self.parse_hourly(hourly_forecast, tz, time_format, units)
@@ -745,6 +812,8 @@ class QWeather(BasePlugin):
                     break
 
             if not is_within_2h:
+                # For hourly data beyond 2 hours, show full precipitation info
+                hour_data['is_minutely'] = False
                 merged.append(hour_data)
 
             if len(merged) >= 24:
@@ -760,14 +829,19 @@ class QWeather(BasePlugin):
 
         logger.info(f"parse_data_points called with display_style: {display_style}")
 
+        # Get current time for timezone debugging
+        now = datetime.now(tz)
+        logger.info(f"Current time in timezone {tz}: {now}")
+
         sunrise_str = today_forecast.get('sunrise')
         if sunrise_str:
             sunrise_dt = datetime.strptime(sunrise_str, "%H:%M").replace(
-                year=datetime.now(tz).year,
-                month=datetime.now(tz).month,
-                day=datetime.now(tz).day,
+                year=now.year,
+                month=now.month,
+                day=now.day,
                 tzinfo=tz
             )
+            logger.info(f"Sunrise time: {sunrise_dt}")
             data_points.append({
                 "label": LABELS[language]["sunrise"],
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
@@ -778,11 +852,12 @@ class QWeather(BasePlugin):
         sunset_str = today_forecast.get('sunset')
         if sunset_str:
             sunset_dt = datetime.strptime(sunset_str, "%H:%M").replace(
-                year=datetime.now(tz).year,
-                month=datetime.now(tz).month,
-                day=datetime.now(tz).day,
+                year=now.year,
+                month=now.month,
+                day=now.day,
                 tzinfo=tz
             )
+            logger.info(f"Sunset time: {sunset_dt}")
             data_points.append({
                 "label": LABELS[language]["sunset"],
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
@@ -884,15 +959,30 @@ class QWeather(BasePlugin):
         return dt.strftime(fmt).lstrip("0")
 
     def determine_theme(self, theme_mode, sunrise_dt, sunset_dt, tz):
+        logger.info(f"determine_theme called with theme_mode: {theme_mode}")
+        if sunrise_dt and sunset_dt:
+            now = datetime.now(tz)
+            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}")
+            should_be_dark = now < sunrise_dt or now >= sunset_dt
+            logger.info(f"Should be dark mode: {should_be_dark}")
+        else:
+            logger.info(f"Missing sunrise/sunset times")
+            
         if theme_mode == "light":
+            logger.info("Theme mode set to light")
             return False
         elif theme_mode == "dark":
+            logger.info("Theme mode set to dark")
             return True
         elif theme_mode == "auto":
             if sunrise_dt and sunset_dt:
                 now = datetime.now(tz)
-                return now < sunrise_dt or now >= sunset_dt
+                result = now < sunrise_dt or now >= sunset_dt
+                logger.info(f"Auto theme result: {result}")
+                return result
+            logger.warning("Auto theme mode but no sunrise/sunset data, defaulting to light")
             return False
+        logger.warning(f"Unknown theme mode: {theme_mode}, defaulting to light")
         return False
 
     def parse_weather_alerts(self, alerts, language="zh"):
@@ -902,10 +992,11 @@ class QWeather(BasePlugin):
             return []
 
         severity_colors = {
-            "extreme": {"bg": "#8B0000", "text": "#FFFFFF"},
-            "severe": {"bg": "#FF4500", "text": "#FFFFFF"},
-            "moderate": {"bg": "#FFA500", "text": "#000000"},
-            "minor": {"bg": "#FFD700", "text": "#000000"}
+            "extreme": {"bg": "#8B0000", "text": "#FFFFFF"},    # 深红 - 极端/红色预警
+            "severe": {"bg": "#FF4500", "text": "#FFFFFF"},      # 橙红 - 严重/橙色预警  
+            "moderate": {"bg": "#FFD700", "text": "#000000"},    # 金黄 - 中等/黄色预警
+            "minor": {"bg": "#1E90FF", "text": "#FFFFFF"},       # 蓝色 - 轻微/蓝色预警
+            "unknown": {"bg": "#1E90FF", "text": "#FFFFFF"}      # 蓝色 - 未知/默认
         }
 
         parsed_alerts = []
@@ -916,6 +1007,15 @@ class QWeather(BasePlugin):
             event_name = alert.get('eventType', {}).get('name', '')
             headline = alert.get('headline', event_name)
             description = alert.get('description', '')
+            
+            # Simplify headline by removing weather station prefix
+            if headline:
+                # Remove patterns like "东城区气象台发布", "北京市气象台发布", etc.
+                import re
+                headline = re.sub(r'.*?[市区县]气象台发布', '', headline)
+                headline = headline.strip()
+                if not headline and event_name:
+                    headline = event_name
 
             if language == "en" and not headline:
                 headline = alert.get('eventType', {}).get('code', 'Weather Alert')

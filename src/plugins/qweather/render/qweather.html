@@ -92,7 +92,16 @@
         <div class="separator"></div>
         <div class="moon-phase-container">
         <img class="moon-phase-icon" src="{{day.moon_phase_icon}}" alt="Moon phase icon">
-        <span style="flex: 1;">{{day.moon_phase_pct}} %</span>
+        <span style="flex: 1; white-space: nowrap;">{{day.moon_phase_pct}}%</span>
+        </div>
+        {% endif %}
+        {% if day.air_quality_display %}
+        <div class="separator"></div>
+        <div class="air-quality-container">
+          <div class="air-quality-bar {% if day.air_quality_display.rounded == 'True' %}rounded{% endif %}" 
+               style="background-color: {{ day.air_quality_display.color }}; color: white;">
+            {{ day.air_quality_display.category }}
+          </div>
         </div>
         {% endif %}
       </div>
