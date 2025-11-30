@@ -96,6 +96,11 @@
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="debugPrecipitation" name="debugPrecipitation" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span id="debugPrecipitationLabel">Debug Precipitation Data</span>
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false'; toggleAirQualityOption();">
         <span id="moonPhaseLabel">Moon Phase</span>
     </div>
@@ -165,6 +170,7 @@
             metricsLabel: 'Metrics',
             graphLabel: 'Weather Graph',
             rainLabel: 'Rain Amount',
+            debugPrecipitationLabel: 'Debug Precipitation Data',
             moonPhaseLabel: 'Moon Phase',
             showAirQualityLabel: 'Air Quality',
             temperatureBarsLabel: 'Temperature Bars',
@@ -203,6 +209,7 @@
             metricsLabel: '气象指标',
             graphLabel: '天气图表',
             rainLabel: '降水量',
+            debugPrecipitationLabel: '调试降水数据',
             moonPhaseLabel: '月相',
             showAirQualityLabel: '空气质量',
             temperatureBarsLabel: '温度条',
@@ -233,6 +240,9 @@
         document.getElementById('metricsLabel').textContent = t.metricsLabel;
         document.getElementById('graphLabel').textContent = t.graphLabel;
         document.getElementById('rainLabel').textContent = t.rainLabel;
+        if (document.getElementById('debugPrecipitationLabel')) {
+            document.getElementById('debugPrecipitationLabel').textContent = t.debugPrecipitationLabel;
+        }
         document.getElementById('moonPhaseLabel').textContent = t.moonPhaseLabel;
         if (document.getElementById('showAirQualityLabel')) {
             document.getElementById('showAirQualityLabel').textContent = t.showAirQualityLabel;
@@ -345,6 +355,9 @@
             document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
             document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
 
+            document.getElementById('debugPrecipitation').checked = pluginSettings.debugPrecipitation === 'true' || pluginSettings.debugPrecipitation === true;
+            document.getElementById('debugPrecipitation').value = (pluginSettings.debugPrecipitation !== undefined && pluginSettings.debugPrecipitation !== null) ? pluginSettings.debugPrecipitation : 'false';
+
             document.getElementById('displayForecast').checked = pluginSettings.displayForecast === 'true' || pluginSettings.displayForecast === true;
             document.getElementById('displayForecast').value = (pluginSettings.displayForecast !== undefined && pluginSettings.displayForecast !== null) ? pluginSettings.displayForecast : 'true';
 
@@ -381,6 +394,8 @@
             document.getElementById('displayGraph').value = "true";
             document.getElementById('displayRain').checked = true;
             document.getElementById('displayRain').value = "true";
+            document.getElementById('debugPrecipitation').checked = false;
+            document.getElementById('debugPrecipitation').value = "false";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
             document.getElementById('forecastDays').value = 7;

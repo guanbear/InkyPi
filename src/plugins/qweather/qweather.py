@@ -151,6 +151,9 @@ class QWeather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
+        # Store settings for debug access
+        self.current_settings = settings
+        
         lat = settings.get('latitude')
         long = settings.get('longitude')
         if not lat or not long:
@@ -756,95 +759,105 @@ class QWeather(BasePlugin):
 
         return hourly
 
-    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
-        merged = []
+    def get_debug_setting(self):
+        """Get debug precipitation setting"""
+        debug_setting = False
+        if hasattr(self, 'current_settings'):
+            debug_setting = self.current_settings.get('debugPrecipitation') == 'true'
+        
+        # Fallback to environment variable
+        if not debug_setting:
+            import os
+            debug_setting = os.getenv('QWEATHER_DEBUG_PRECIPITATION', '').lower() == 'true'
+        
+        return debug_setting
+
+    def display_minutely_precipitation(self, minutely_forecast, tz, time_format, units):
+        """Display minutely precipitation data for next 2 hours if available"""
+        if not minutely_forecast:
+            return []
+        
         current_time = datetime.now(tz)
         two_hours_later = current_time + timedelta(hours=2)
-
-        if minutely_forecast:
-            logger.info(f"Using {len(minutely_forecast)} minutely forecast points for first 2 hours")
-            minutely_temps = {}
-
-            for minute_data in minutely_forecast:
-                dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
-
-                if dt < current_time:
-                    continue
-
-                if dt > two_hours_later:
-                    break
-
-                hour_key = dt.replace(minute=0, second=0, microsecond=0)
-                if hour_key not in minutely_temps:
-                    minutely_temps[hour_key] = []
-
-                precip_amount = float(minute_data.get('precip', 0))
-                if units == "imperial":
-                    precip_amount = precip_amount / 25.4
-
-                minutely_temps[hour_key].append({
-                    'precip': precip_amount,
-                    'dt': dt
-                })
-
-            hourly_data = self.parse_hourly(hourly_forecast, tz, time_format, units)
-
-            for hour_time in sorted(minutely_temps.keys()):
-                if hour_time >= two_hours_later:
-                    break
-
-                temps_in_hour = minutely_temps[hour_time]
-                if not temps_in_hour:
-                    continue
-
-                total_precip = sum(item['precip'] for item in temps_in_hour)
-
-                matching_hourly = next((h for h in hourly_data if h['time'] == self.format_time(hour_time, time_format, hour_only=True)), None)
-                temp = matching_hourly['temperature'] if matching_hourly else None
-                precip_prob = matching_hourly['precipitation'] if matching_hourly else 0.0
-
-                if temp is None and hourly_data:
-                    temp = hourly_data[0]['temperature']
-
-                if total_precip > 0 and precip_prob == 0:
-                    if total_precip >= 2.5:
-                        precip_prob = 0.9
-                    elif total_precip >= 1.0:
-                        precip_prob = 0.7
-                    elif total_precip >= 0.1:
-                        precip_prob = 0.5
-                    else:
-                        precip_prob = 0.3
-
-                # For minutely data, show simplified precipitation info without specific values
-                merged.append({
-                    "time": self.format_time(hour_time, time_format, hour_only=True),
-                    "temperature": temp,
-                    "precipitation": precip_prob,
-                    "rain": round(total_precip, 2),
+        minutely_data = []
+        
+        for minute_data in minutely_forecast:
+            dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
+            
+            if dt < current_time:
+                continue
+            if dt > two_hours_later:
+                break
+                
+            precip_amount = float(minute_data.get('precip', 0))
+            if units == "imperial":
+                precip_amount = precip_amount / 25.4
+            
+            # Only include if there's precipitation
+            if precip_amount > 0:
+                minutely_data.append({
+                    "time": self.format_time(dt, time_format, hour_only=False),  # Show minutes for minutely data
+                    "temperature": None,  # No temperature in minutely data
+                    "precipitation": 1.0,  # Always 100% since we're showing only when it precipitates
+                    "rain": round(precip_amount, 2),
                     "is_minutely": True
                 })
+        
+        return minutely_data
 
-        hourly_parsed = self.parse_hourly(hourly_forecast, tz, time_format, units)
-        for hour_data in hourly_parsed:
-            hour_dt_str = hour_data['time']
+    def get_hourly_forecast_adjusted(self, hourly_forecast, tz, time_format, units, minutely_count=0):
+        """Get hourly forecast with adjusted time range when minutely data is shown"""
+        hourly = []
+        current_time = datetime.now(tz)
+        max_hours = 24 - minutely_count  # Adjust range to keep total within 24 entries
+        
+        for hour in hourly_forecast[:max_hours]:
+            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
+            
+            if dt < current_time:
+                continue
 
-            is_within_2h = False
-            for existing in merged:
-                if existing['time'] == hour_dt_str:
-                    is_within_2h = True
-                    break
+            precip_prob = float(hour.get('pop', 0)) / 100.0
+            precip_amount = float(hour.get('precip', 0))
 
-            if not is_within_2h:
-                # For hourly data beyond 2 hours, show full precipitation info
-                hour_data['is_minutely'] = False
-                merged.append(hour_data)
+            if units == "imperial":
+                precip_amount = precip_amount / 25.4
 
-            if len(merged) >= 24:
+            hour_forecast = {
+                "time": self.format_time(dt, time_format, hour_only=True),
+                "temperature": int(float(hour.get('temp', 0))),
+                "precipitation": precip_prob,
+                "rain": round(precip_amount, 2),
+                "is_minutely": False
+            }
+            hourly.append(hour_forecast)
+
+            if len(hourly) >= max_hours:
                 break
 
-        logger.info(f"Merged forecast: {len(merged)} data points")
-        return merged[:24]
+        return hourly
+
+    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        """New logic: show minutely precipitation first, then hourly forecast"""
+        merged = []
+        
+        # Get debug setting
+        debug_precipitation = self.get_debug_setting() if hasattr(self, 'get_debug_setting') else False
+        
+        # First, get minutely precipitation data for next 2 hours
+        minutely_data = self.display_minutely_precipitation(minutely_forecast, tz, time_format, units)
+        
+        # If debug mode OR if there's actual precipitation, include minutely data
+        if debug_precipitation or minutely_data:
+            logger.info(f"Showing {len(minutely_data)} minutely data points")
+            merged.extend(minutely_data)
+        
+        # Then get hourly forecast with adjusted range
+        hourly_data = self.get_hourly_forecast_adjusted(hourly_forecast, tz, time_format, units, len(minutely_data))
+        merged.extend(hourly_data)
+        
+        logger.info(f"Total merged forecast: {len(merged)} data points ({len(minutely_data)} minutely, {len(hourly_data)} hourly)")
+        return merged[:24]  # Ensure max 24 entries
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
         data_points = []
