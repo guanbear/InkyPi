@@ -572,9 +572,9 @@
   font-size: 10px;
   font-weight: bold;
   text-align: center;
-  width: 90%;
-  min-width: 90%;
-  max-width: 90%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
   background-color: #CC9900; /* Darker yellow for better visibility */
   color: white;
   border: none;
