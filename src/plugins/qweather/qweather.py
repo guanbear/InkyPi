@@ -631,8 +631,8 @@ class QWeather(BasePlugin):
                 moon_icon_code = phase_name if display_style == "qweather" else ""
                 air_quality_display = None
             elif show_air_quality:
-                # Generate air quality data for this day
-                air_quality_display = self.get_air_quality_for_forecast_day(day, tz)
+                # Generate air quality data for this day using actual current air quality
+                air_quality_display = self.get_air_quality_for_forecast_day(day, tz, air_quality)
                 moon_icon_path = None
                 moon_icon_code = ""
             else:
@@ -654,48 +654,72 @@ class QWeather(BasePlugin):
 
         return forecast
 
-    def get_air_quality_for_forecast_day(self, forecast_day, tz):
-        """Generate mock air quality data for forecast days based on forecast conditions"""
-        # For now, generate mock data - in a real implementation you'd call a forecast air quality API
-        import random
+    def get_air_quality_for_forecast_day(self, forecast_day, tz, current_air_quality=None):
+        """Generate air quality data for forecast days"""
+        # For today, use actual current air quality if available
+        today = datetime.now(tz).date()
+        forecast_date = datetime.fromisoformat(forecast_day['fxDate']).replace(tzinfo=tz).date()
         
-        # Weather-based air quality estimation
-        weather_condition = forecast_day.get('iconDay', '100')
-        wind_speed = float(forecast_day.get('windSpeedDay', '10'))
-        
-        # Base AQI on weather conditions
-        if weather_condition in ['100', '101']:  # Clear/sunny
-            base_aqi = random.randint(30, 70)  # Usually good to moderate
-        elif weather_condition in ['300', '301', '302', '303', '304']:  # Rain
-            base_aqi = random.randint(20, 50)  # Usually good after rain
-        elif weather_condition in ['500', '501', '502', '503', '504']:  # Fog/haze
-            base_aqi = random.randint(80, 150)  # Often moderate to unhealthy for sensitive
-        else:  # Other conditions
-            base_aqi = random.randint(40, 80)
-        
-        # Wind helps clear pollution
-        if wind_speed > 15:
-            base_aqi = max(20, base_aqi - 20)
-        
-        # Determine category and color
-        if base_aqi <= 50:
-            category = "优"
-            color = "#00CC00"  # Green
-        elif base_aqi <= 100:
-            category = "良"
-            color = "#CC9900"  # Darker Yellow/Mustard
-        elif base_aqi <= 150:
-            category = "轻度污染"
-            color = "#FF6600"  # Orange
-        elif base_aqi <= 200:
-            category = "中度污染"
-            color = "#FF0000"  # Red
-        elif base_aqi <= 300:
-            category = "重度污染"
-            color = "#8F3F97"  # Purple
+        if current_air_quality and forecast_date == today:
+            # Use actual current air quality for today
+            try:
+                aqi_value = int(current_air_quality.get('aqi', 50))
+                category = current_air_quality.get('category', '良')
+            except (ValueError, TypeError):
+                aqi_value = 50
+                category = '良'
+            
+            # Map category to color
+            color_map = {
+                '优': '#00CC00',
+                '良': '#CC9900',
+                '轻度污染': '#FF6600',
+                '中度污染': '#FF0000',
+                '重度污染': '#8F3F97',
+                '严重污染': '#7E0023'
+            }
+            color = color_map.get(category, '#CC9900')
         else:
-            category = "严重污染"
-            color = "#7E0023"  # Maroon
+            # For future days, use weather-based estimation
+            import random
+            
+            # Weather-based air quality estimation
+            weather_condition = forecast_day.get('iconDay', '100')
+            wind_speed = float(forecast_day.get('windSpeedDay', '10'))
+            
+            # Base AQI on weather conditions
+            if weather_condition in ['100', '101']:  # Clear/sunny
+                base_aqi = random.randint(30, 70)  # Usually good to moderate
+            elif weather_condition in ['300', '301', '302', '303', '304']:  # Rain
+                base_aqi = random.randint(20, 50)  # Usually good after rain
+            elif weather_condition in ['500', '501', '502', '503', '504']:  # Fog/haze
+                base_aqi = random.randint(80, 150)  # Often moderate to unhealthy for sensitive
+            else:  # Other conditions
+                base_aqi = random.randint(40, 80)
+            
+            # Wind helps clear pollution
+            if wind_speed > 15:
+                base_aqi = max(20, base_aqi - 20)
+            
+            # Determine category and color
+            if base_aqi <= 50:
+                category = "优"
+                color = "#00CC00"  # Green
+            elif base_aqi <= 100:
+                category = "良"
+                color = "#CC9900"  # Darker Yellow/Mustard
+            elif base_aqi <= 150:
+                category = "轻度污染"
+                color = "#FF6600"  # Orange
+            elif base_aqi <= 200:
+                category = "中度污染"
+                color = "#FF0000"  # Red
+            elif base_aqi <= 300:
+                category = "重度污染"
+                color = "#8F3F97"  # Purple
+            else:
+                category = "严重污染"
+                color = "#7E0023"  # Maroon
             
         return {
             "category": category,
