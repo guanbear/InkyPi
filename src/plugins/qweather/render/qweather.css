@@ -565,6 +565,9 @@
   justify-content: center;
   align-items: center;
   margin-top: 2px;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .air-quality-bar {
@@ -573,12 +576,9 @@
   font-weight: bold;
   text-align: center;
   width: 100%;
-  min-width: 100%;
-  max-width: 100%;
   background-color: #CC9900; /* Darker yellow for better visibility */
   color: white;
   border: none;
-  margin: 0 auto;
   display: block;
   box-sizing: border-box;
   height: 20px;
