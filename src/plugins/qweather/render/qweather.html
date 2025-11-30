@@ -166,7 +166,8 @@
 	const threshold = isImperial ? 0.0035 : 0.09;
 
 	// Text color based on theme
-	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') }}"{% endif %};
+	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') if plugin_settings.textColor else '#000000' }}"{% endif %};
+	console.log('Dark mode:', {% if dark_mode %}true{% else %}false{% endif %}, 'Text color:', textColor);
 
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);

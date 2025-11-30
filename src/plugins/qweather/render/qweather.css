@@ -547,7 +547,7 @@
   font-weight: bold;
   text-align: center;
   min-width: 30px;
-  background-color: #E6B800; /* Default yellow */
+  background-color: #CC9900; /* Darker yellow for better visibility */
   color: white;
   border: none;
 }
@@ -556,7 +556,7 @@
   border-radius: 4px;
 }
 
-/* Apple-Style Temperature Bars */
+/* Temperature Bars */
 .temp-bar-container {
   position: absolute;
   right: 1px;

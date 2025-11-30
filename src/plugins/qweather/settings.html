@@ -6,8 +6,8 @@
         <span id="languageLabel">🌐 Language</span>
     </label>
     <select id="language" name="language" class="form-input">
-        <option value="en">🇺🇸 English</option>
         <option value="zh">🇨🇳 中文</option>
+        <option value="en">🇺🇸 English</option>
     </select>
 </div>
 
@@ -96,13 +96,18 @@
     </div>
 
     <div class="form-group">
-        <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
+        <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false'; toggleAirQualityOption();">
         <span id="moonPhaseLabel">Moon Phase</span>
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="showAirQuality" name="showAirQuality" onclick="this.value=this.checked ? 'true' : 'false'; toggleMoonPhaseOption();">
+        <span id="showAirQualityLabel">Air Quality</span>
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="temperatureBars" name="temperatureBars" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span id="temperatureBarsLabel">Temperature Bars (Apple Style)</span>
+        <span id="temperatureBarsLabel">Temperature Bars</span>
     </div>
 
     <div class="form-group">
@@ -161,7 +166,8 @@
             graphLabel: 'Weather Graph',
             rainLabel: 'Rain Amount',
             moonPhaseLabel: 'Moon Phase',
-            temperatureBarsLabel: 'Temperature Bars (Apple Style)',
+            showAirQualityLabel: 'Air Quality',
+            temperatureBarsLabel: 'Temperature Bars',
             forecastLabel: 'Forecast',
             daysLabel: 'days',
             modalTitle: 'Select Location',
@@ -198,7 +204,8 @@
             graphLabel: '天气图表',
             rainLabel: '降水量',
             moonPhaseLabel: '月相',
-            temperatureBarsLabel: '温度条（苹果风格）',
+            showAirQualityLabel: '空气质量',
+            temperatureBarsLabel: '温度条',
             forecastLabel: '天气预报',
             daysLabel: '天',
             modalTitle: '选择位置',
@@ -227,6 +234,9 @@
         document.getElementById('graphLabel').textContent = t.graphLabel;
         document.getElementById('rainLabel').textContent = t.rainLabel;
         document.getElementById('moonPhaseLabel').textContent = t.moonPhaseLabel;
+        if (document.getElementById('showAirQualityLabel')) {
+            document.getElementById('showAirQualityLabel').textContent = t.showAirQualityLabel;
+        }
         document.getElementById('temperatureBarsLabel').textContent = t.temperatureBarsLabel;
         document.getElementById('forecastLabel').textContent = t.forecastLabel;
         document.getElementById('daysLabel').textContent = t.daysLabel;
@@ -252,6 +262,24 @@
         severityOptions[2].textContent = t.severityModerate;
         severityOptions[3].textContent = t.severitySevere;
         severityOptions[4].textContent = t.severityExtreme;
+    }
+
+    function toggleAirQualityOption() {
+        const moonPhaseCheckbox = document.getElementById('moonPhase');
+        const airQualityCheckbox = document.getElementById('showAirQuality');
+        if (moonPhaseCheckbox.checked) {
+            airQualityCheckbox.checked = false;
+            airQualityCheckbox.value = 'false';
+        }
+    }
+
+    function toggleMoonPhaseOption() {
+        const moonPhaseCheckbox = document.getElementById('moonPhase');
+        const airQualityCheckbox = document.getElementById('showAirQuality');
+        if (airQualityCheckbox.checked) {
+            moonPhaseCheckbox.checked = false;
+            moonPhaseCheckbox.value = 'false';
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -301,7 +329,7 @@
             document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
             document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
             document.getElementById('units').value = pluginSettings.units || 'metric';
-            document.getElementById('language').value = pluginSettings.language || 'en';
+            document.getElementById('language').value = pluginSettings.language || 'zh';
             document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
             document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
 
@@ -325,6 +353,9 @@
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase === 'true' || pluginSettings.moonPhase === true;
             document.getElementById('moonPhase').value = (pluginSettings.moonPhase !== undefined && pluginSettings.moonPhase !== null) ? pluginSettings.moonPhase : 'false';
 
+            document.getElementById('showAirQuality').checked = pluginSettings.showAirQuality === 'true' || pluginSettings.showAirQuality === true;
+            document.getElementById('showAirQuality').value = (pluginSettings.showAirQuality !== undefined && pluginSettings.showAirQuality !== null) ? pluginSettings.showAirQuality : 'false';
+
             document.getElementById('temperatureBars').checked = pluginSettings.temperatureBars === 'true' || pluginSettings.temperatureBars === true;
             document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'true';
 
@@ -339,7 +370,7 @@
             document.getElementById('latitude').value = '39.9042';
             document.getElementById('longitude').value = '116.4074';
             document.getElementById('units').value = "metric";
-            document.getElementById('language').value = "en";
+            document.getElementById('language').value = "zh";
             document.getElementById('themeMode').value = "auto";
             document.getElementById('displayStyle').value = "default";
             document.getElementById('displayRefreshTime').checked = true;
@@ -355,6 +386,8 @@
             document.getElementById('forecastDays').value = 7;
             document.getElementById('moonPhase').checked = false;
             document.getElementById('moonPhase').value = "false";
+            document.getElementById('showAirQuality').checked = false;
+            document.getElementById('showAirQuality').value = "false";
             document.getElementById('temperatureBars').checked = true;
             document.getElementById('temperatureBars').value = "true";
             document.getElementById('customTitle').value = '';
@@ -362,8 +395,8 @@
             document.getElementById('mockAlertHeadline').value = '';
             document.getElementById('mockAlertSeverity').value = '';
 
-            // Initialize with English
-            updateLanguage('en');
+            // Initialize with Chinese
+            updateLanguage('zh');
         }
     });
 </script>

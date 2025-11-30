@@ -683,7 +683,7 @@ class QWeather(BasePlugin):
             color = "#00CC00"  # Green
         elif base_aqi <= 100:
             category = "良"
-            color = "#E6B800"  # Yellow
+            color = "#CC9900"  # Darker Yellow/Mustard
         elif base_aqi <= 150:
             category = "轻度污染"
             color = "#FF6600"  # Orange
@@ -937,7 +937,7 @@ class QWeather(BasePlugin):
         if aqi <= 50:
             return "#00CC00"  # Darker Green - Good
         elif aqi <= 100:
-            return "#E6B800"  # Darker Yellow - Moderate  
+            return "#CC9900"  # Darker Yellow/Mustard - Moderate  
         elif aqi <= 150:
             return "#FF6600"  # Orange - Unhealthy for Sensitive
         elif aqi <= 200:
