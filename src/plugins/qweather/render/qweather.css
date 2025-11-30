@@ -568,17 +568,21 @@
 }
 
 .air-quality-bar {
-  padding: 3px 8px;
+  padding: 4px 12px;
   font-size: 10px;
   font-weight: bold;
   text-align: center;
-  min-width: 90%;
   width: 90%;
+  min-width: 90%;
+  max-width: 90%;
   background-color: #CC9900; /* Darker yellow for better visibility */
   color: white;
   border: none;
   margin: 0 auto;
   display: block;
+  box-sizing: border-box;
+  height: 20px;
+  line-height: 12px;
 }
 
 .air-quality-bar.rounded {
