@@ -515,7 +515,7 @@ class QWeather(BasePlugin):
             "time_format": time_format
         })
 
-        data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings)
+        data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings, air_quality)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language, display_style)
         data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
@@ -570,7 +570,7 @@ class QWeather(BasePlugin):
         # Default style uses OpenWeather-style mapping
         return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
-    def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default", settings=None):
+    def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default", settings=None, air_quality=None):
         forecast = []
         today = datetime.now(tz).date()
 
