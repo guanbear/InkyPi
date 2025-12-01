@@ -759,27 +759,14 @@ class QWeather(BasePlugin):
 
         return hourly
 
-    def get_debug_setting(self):
-        """Get debug precipitation setting"""
-        debug_setting = False
-        if hasattr(self, 'current_settings'):
-            debug_setting = self.current_settings.get('debugPrecipitation') == 'true'
-        
-        # Fallback to environment variable
-        if not debug_setting:
-            import os
-            debug_setting = os.getenv('QWEATHER_DEBUG_PRECIPITATION', '').lower() == 'true'
-        
-        return debug_setting
-
-    def display_minutely_precipitation(self, minutely_forecast, tz, time_format, units):
-        """Display minutely precipitation data for next 2 hours if available"""
+    def get_minutely_precipitation_map(self, minutely_forecast, tz, units):
+        """Get map of hourly precipitation from minutely data (next 2 hours)"""
         if not minutely_forecast:
-            return []
+            return {}
         
         current_time = datetime.now(tz)
         two_hours_later = current_time + timedelta(hours=2)
-        minutely_data = []
+        precip_map = {}
         
         for minute_data in minutely_forecast:
             dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
@@ -793,69 +780,57 @@ class QWeather(BasePlugin):
             if units == "imperial":
                 precip_amount = precip_amount / 25.4
             
-            # Only include if there's precipitation
+            # Track all precipitation data
             if precip_amount > 0:
-                minutely_data.append({
-                    "time": self.format_time(dt, time_format, hour_only=False),  # Show minutes for minutely data
-                    "temperature": None,  # No temperature in minutely data
-                    "precipitation": 1.0,  # Always 100% since we're showing only when it precipitates
-                    "rain": round(precip_amount, 2),
-                    "is_minutely": True
-                })
+                hour_key = dt.strftime("%Y-%m-%d %H")
+                if hour_key not in precip_map:
+                    precip_map[hour_key] = []
+                precip_map[hour_key].append(precip_amount)
         
-        return minutely_data
+        # Calculate average precipitation per hour
+        for hour_key in precip_map:
+            precip_map[hour_key] = sum(precip_map[hour_key]) / len(precip_map[hour_key])
+        
+        return precip_map
 
-    def get_hourly_forecast_adjusted(self, hourly_forecast, tz, time_format, units, minutely_count=0):
-        """Get hourly forecast with adjusted time range when minutely data is shown"""
+    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        """Merge minutely and hourly: use minutely precipitation to replace hourly when available"""
+        # Get minutely precipitation map (hour -> avg precipitation)
+        minutely_precip_map = self.get_minutely_precipitation_map(minutely_forecast, tz, units)
+        
         hourly = []
         current_time = datetime.now(tz)
-        max_hours = 24 - minutely_count  # Adjust range to keep total within 24 entries
         
-        for hour in hourly_forecast[:max_hours]:
+        for hour in hourly_forecast[:24]:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
             
             if dt < current_time:
                 continue
 
-            precip_prob = float(hour.get('pop', 0)) / 100.0
-            precip_amount = float(hour.get('precip', 0))
-
-            if units == "imperial":
-                precip_amount = precip_amount / 25.4
+            hour_key = dt.strftime("%Y-%m-%d %H")
+            
+            # Use minutely precipitation if available, otherwise use hourly
+            if hour_key in minutely_precip_map:
+                precip_prob = 1.0  # 100% when we have actual minutely precipitation data
+                precip_amount = minutely_precip_map[hour_key]
+            else:
+                precip_prob = float(hour.get('pop', 0)) / 100.0
+                precip_amount = float(hour.get('precip', 0))
+                if units == "imperial":
+                    precip_amount = precip_amount / 25.4
 
             hour_forecast = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
-                "rain": round(precip_amount, 2),
-                "is_minutely": False
+                "rain": round(precip_amount, 2)
             }
             hourly.append(hour_forecast)
 
-            if len(hourly) >= max_hours:
+            if len(hourly) >= 24:
                 break
 
         return hourly
-
-    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
-        """New logic: show minutely precipitation first, then hourly forecast"""
-        merged = []
-        
-        # Get debug setting
-        debug_precipitation = self.get_debug_setting() if hasattr(self, 'get_debug_setting') else False
-        
-        # First, get minutely precipitation data for next 2 hours
-        minutely_data = self.display_minutely_precipitation(minutely_forecast, tz, time_format, units)
-        
-        # If debug mode OR if there's actual precipitation, include minutely data
-        if debug_precipitation or minutely_data:
-            merged.extend(minutely_data)
-        
-        # Then get hourly forecast with adjusted range
-        hourly_data = self.get_hourly_forecast_adjusted(hourly_forecast, tz, time_format, units, len(minutely_data))
-        merged.extend(hourly_data)
-        
-        return merged[:24]  # Ensure max 24 entries
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
         data_points = []
