@@ -85,9 +85,6 @@ app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 
-# Register opener for HEIF/HEIC images
-register_heif_opener()
-
 if __name__ == '__main__':
 
     # start the background refresh task

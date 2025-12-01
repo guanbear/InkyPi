@@ -849,14 +849,12 @@ class QWeather(BasePlugin):
         
         # If debug mode OR if there's actual precipitation, include minutely data
         if debug_precipitation or minutely_data:
-            logger.info(f"Showing {len(minutely_data)} minutely data points")
             merged.extend(minutely_data)
         
         # Then get hourly forecast with adjusted range
         hourly_data = self.get_hourly_forecast_adjusted(hourly_forecast, tz, time_format, units, len(minutely_data))
         merged.extend(hourly_data)
         
-        logger.info(f"Total merged forecast: {len(merged)} data points ({len(minutely_data)} minutely, {len(hourly_data)} hourly)")
         return merged[:24]  # Ensure max 24 entries
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
@@ -949,7 +947,6 @@ class QWeather(BasePlugin):
             aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
             # Use the new air-quality.png icon for qweather style
             aqi_icon_path = self.get_plugin_dir('icons/air-quality.png') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
-            logger.info(f"AQI icon path selected: {aqi_icon_path}, display_style: {display_style}")
             data_points.append({
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
@@ -1047,9 +1044,9 @@ class QWeather(BasePlugin):
             
             # Simplify headline by removing weather station prefix
             if headline:
-                # Remove patterns like "东城区气象台发布", "北京市气象台发布", etc.
+                # Remove patterns like "东城区气象台发布", "北京市气象台发布", "海南省气象局发布", etc.
                 import re
-                headline = re.sub(r'.*?[市区县]气象台发布', '', headline)
+                headline = re.sub(r'.*?气象[台局]发布', '', headline)
                 headline = headline.strip()
                 if not headline and event_name:
                     headline = event_name
