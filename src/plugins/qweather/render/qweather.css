@@ -332,7 +332,7 @@
 }
 
 
-/* Data Points Grid */
+/* Data Points Grid - Default 2 columns for horizontal displays */
 .data-points {
   display: grid;
   justify-content: space-evenly;
@@ -545,13 +545,16 @@
 
 }
 
-@media (min-aspect-ratio: 2) {
+/* Ultra-wide displays only: 3 columns for aspect ratio >= 2.5 */
+@media (min-aspect-ratio: 5/2) {
   .data-points {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
   }
 
 }
+
+/* Removed: Force 2 columns for 800x480 - now default behavior */
 
 @media (max-width: 250px) {
   .weather-dashboard {

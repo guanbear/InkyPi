@@ -235,6 +235,12 @@ class QWeather(BasePlugin):
             template_params['title'] = title
             template_params['labels'] = LABELS[language]
 
+            # Pass sunrise/sunset info to template for hourly chart
+            template_params['sunrise_time'] = sunrise_dt.strftime("%H:%M") if sunrise_dt else None
+            template_params['sunset_time'] = sunset_dt.strftime("%H:%M") if sunset_dt else None
+            template_params['sunrise_icon'] = self.get_plugin_dir('icons/sunrise.png')
+            template_params['sunset_icon'] = self.get_plugin_dir('icons/sunset.png')
+
             is_dark_mode = self.determine_theme(theme_mode, sunrise_dt, sunset_dt, tz)
             template_params['dark_mode'] = is_dark_mode
             template_params['display_style'] = display_style
@@ -810,10 +816,10 @@ class QWeather(BasePlugin):
         hourly = []
         current_time = datetime.now(tz)
         max_hours = 24 - minutely_count  # Adjust range to keep total within 24 entries
-        
+
         for hour in hourly_forecast[:max_hours]:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
-            
+
             if dt < current_time:
                 continue
 
@@ -825,6 +831,8 @@ class QWeather(BasePlugin):
 
             hour_forecast = {
                 "time": self.format_time(dt, time_format, hour_only=True),
+                "time_full": dt.strftime("%H:%M"),  # Full time for chart logic
+                "hour": dt.hour,  # Hour number for even/odd logic
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2),
@@ -872,12 +880,12 @@ class QWeather(BasePlugin):
 
         sunrise_str = today_forecast.get('sunrise')
         if sunrise_str:
-            sunrise_dt = datetime.strptime(sunrise_str, "%H:%M").replace(
+            naive_sunrise = datetime.strptime(sunrise_str, "%H:%M").replace(
                 year=now.year,
                 month=now.month,
-                day=now.day,
-                tzinfo=tz
+                day=now.day
             )
+            sunrise_dt = tz.localize(naive_sunrise)
             logger.info(f"Sunrise time: {sunrise_dt}")
             data_points.append({
                 "label": LABELS[language]["sunrise"],
@@ -888,12 +896,12 @@ class QWeather(BasePlugin):
 
         sunset_str = today_forecast.get('sunset')
         if sunset_str:
-            sunset_dt = datetime.strptime(sunset_str, "%H:%M").replace(
+            naive_sunset = datetime.strptime(sunset_str, "%H:%M").replace(
                 year=now.year,
                 month=now.month,
-                day=now.day,
-                tzinfo=tz
+                day=now.day
             )
+            sunset_dt = tz.localize(naive_sunset)
             logger.info(f"Sunset time: {sunset_dt}")
             data_points.append({
                 "label": LABELS[language]["sunset"],

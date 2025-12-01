@@ -157,9 +157,28 @@
 
     // Extract hourly temperature and labels from template variables
     const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const timeFull = [{% for hour in hourly_forecast %}"{{ hour.time_full }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const hours = [{% for hour in hourly_forecast %}{{ hour.hour }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    // Sunrise/sunset times
+    const sunriseTime = {% if sunrise_time %}"{{ sunrise_time }}"{% else %}null{% endif %};
+    const sunsetTime = {% if sunset_time %}"{{ sunset_time }}"{% else %}null{% endif %};
+    const sunriseIcon = "{{ sunrise_icon }}";
+    const sunsetIcon = "{{ sunset_icon }}";
+
+    // Load icons
+    const sunriseImg = new Image();
+    const sunsetImg = new Image();
+    let iconsLoaded = 0;
+    const totalIcons = 2;
+
+    sunriseImg.onload = () => { iconsLoaded++; };
+    sunsetImg.onload = () => { iconsLoaded++; };
+    sunriseImg.src = sunriseIcon;
+    sunsetImg.src = sunsetIcon;
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
@@ -169,10 +188,143 @@
 	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') if plugin_settings.textColor else '#000000' }}"{% endif %};
 	console.log('Dark mode:', {% if dark_mode %}true{% else %}false{% endif %}, 'Text color:', textColor);
 
+    // Helper function to parse HH:MM to minutes
+    function parseTime(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    // Debug: log sunrise/sunset info
+    console.log('Sunrise time:', sunriseTime);
+    console.log('Sunset time:', sunsetTime);
+    console.log('Time data length:', timeFull.length);
+    console.log('Dark mode:', {% if dark_mode %}true{% else %}false{% endif %});
+
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
-	
+
+    // Register sunrise/sunset and day/night gradient plugin
+    Chart.register({
+      id: 'sunriseSunsetMarker',
+      beforeDatasetsDraw(chart) {
+        // This runs before datasets are drawn, perfect for gradient setup
+        const { ctx, chartArea: { left, right, top, bottom }, scales: { x } } = chart;
+
+        if (!sunriseTime || !sunsetTime) return;
+
+        ctx.save();
+
+        // Calculate gradient with transitions centered at sunrise/sunset
+        const isDarkMode = {% if dark_mode %}true{% else %}false{% endif %};
+        const gradient = ctx.createLinearGradient(left, 0, right, 0);
+
+        // Calculate sunrise and sunset positions in minutes
+        const sunriseMin = parseTime(sunriseTime);
+        const sunsetMin = parseTime(sunsetTime);
+        const transitionWindow = 30; // 30 minutes transition window on each side
+
+        // Define colors
+        const dayColor = 'rgba(252, 204, 5, 0.7)'; // Yellow for day
+        const nightColorLight = 'rgba(30, 45, 100, 0.75)'; // Much darker blue for light mode (e-ink friendly)
+        const nightColorDark = 'rgba(100, 181, 246, 0.6)'; // Light blue for dark mode
+        const nightColor = isDarkMode ? nightColorDark : nightColorLight;
+
+        // Find the positions of sunrise and sunset in the data array
+        const sunriseIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - sunriseMin) < 30);
+        const sunsetIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - sunsetMin) < 30);
+
+        // Calculate exact positions as fractions (0 to 1)
+        const sunrisePosition = sunriseIndex !== -1 ? sunriseIndex / (timeFull.length - 1) : -1;
+        const sunsetPosition = sunsetIndex !== -1 ? sunsetIndex / (timeFull.length - 1) : -1;
+
+        // Calculate transition boundaries (30 minutes before and after)
+        const sunriseStartPos = sunrisePosition - (transitionWindow / 60) / 24; // Approximate
+        const sunriseEndPos = sunrisePosition + (transitionWindow / 60) / 24;
+        const sunsetStartPos = sunsetPosition - (transitionWindow / 60) / 24;
+        const sunsetEndPos = sunsetPosition + (transitionWindow / 60) / 24;
+
+        // Add color stops for the gradient
+        // Before sunrise: pure night
+        if (sunrisePosition > 0) {
+          gradient.addColorStop(0, nightColor);
+          gradient.addColorStop(Math.max(0, sunriseStartPos), nightColor);
+        }
+
+        // Sunrise transition: night -> day
+        if (sunrisePosition >= 0) {
+          gradient.addColorStop(Math.max(0, sunriseStartPos), nightColor);
+          gradient.addColorStop(Math.min(1, sunrisePosition), dayColor); // Center at sunrise
+          gradient.addColorStop(Math.min(1, sunriseEndPos), dayColor);
+        }
+
+        // Day: pure yellow (between sunrise and sunset)
+        if (sunrisePosition >= 0 && sunsetPosition >= 0) {
+          gradient.addColorStop(Math.min(1, sunriseEndPos), dayColor);
+          gradient.addColorStop(Math.max(0, sunsetStartPos), dayColor);
+        }
+
+        // Sunset transition: day -> night
+        if (sunsetPosition >= 0) {
+          gradient.addColorStop(Math.max(0, sunsetStartPos), dayColor);
+          gradient.addColorStop(Math.min(1, sunsetPosition), nightColor); // Center at sunset
+          gradient.addColorStop(Math.min(1, sunsetEndPos), nightColor);
+        }
+
+        // After sunset: pure night
+        if (sunsetPosition < 1) {
+          gradient.addColorStop(Math.max(0, sunsetEndPos), nightColor);
+          gradient.addColorStop(1, nightColor);
+        }
+
+        // Apply gradient to temperature line dataset
+        if (chart.data.datasets[0]) {
+          chart.data.datasets[0].backgroundColor = gradient;
+        }
+
+        ctx.restore();
+      },
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+
+        if (!sunriseTime && !sunsetTime) return;
+
+        ctx.save();
+
+        // Draw sunrise icon
+        if (sunriseTime) {
+          const sunriseIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - parseTime(sunriseTime)) < 30);
+          if (sunriseIndex !== -1) {
+            const xPos = x.getPixelForValue(sunriseIndex);
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
+
+            // Draw icon
+            if (sunriseImg.complete && sunriseImg.naturalWidth > 0) {
+              ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
+            }
+          }
+        }
+
+        // Draw sunset icon
+        if (sunsetTime) {
+          const sunsetIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - parseTime(sunsetTime)) < 30);
+          if (sunsetIndex !== -1) {
+            const xPos = x.getPixelForValue(sunsetIndex);
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
+
+            // Draw icon
+            if (sunsetImg.complete && sunsetImg.naturalWidth > 0) {
+              ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
+            }
+          }
+        }
+
+        ctx.restore();
+      }
+    });
+
     Chart.register({
       id: 'annotationRain',
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -251,13 +403,23 @@
         scales: {
           x: {
             ticks: {
-              autoSkip: true,
+              autoSkip: false,
               padding: 0,
-              maxRotation: 0, // Prevent label rotation
-              minRotation: 0, // Prevent label rotation
+              maxRotation: 0,
+              minRotation: 0,
               color: textColor,
               font: {
                 family: 'Jost'
+              },
+              // Only show even hours
+              callback: function(value, index, values) {
+                const hour = hours[index];
+
+                // Only show even hours
+                if (hour % 2 !== 0) return '';
+
+                // Show this even hour
+                return labels[index];
               }
             },
             grid: {
@@ -327,18 +489,10 @@
     const gradientStart = chart.scales['y'].getPixelForValue(maxTemp); // Max temperature
     const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
 
-    // Create gradient based on y-axis values
-    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
-    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
-
-    // Update the chart to apply the gradient
-    chart.data.datasets[0].backgroundColor = tempGradient;
-
-    // Create gradient based on y-axis values
+    // Create precipitation gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)'); // Top of the gradient (max temperature)
-    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)');
+    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)');
 
     chart.data.datasets[1].backgroundColor = precipitationGradient;
 
