@@ -759,15 +759,22 @@ class QWeather(BasePlugin):
 
         return hourly
 
-    def get_minutely_precipitation_map(self, minutely_forecast, tz, units):
-        """Get map of hourly precipitation from minutely data (next 2 hours)"""
+    def get_minutely_data_with_hourly_temp(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        """Get minutely precipitation data with temperature from hourly forecast"""
         if not minutely_forecast:
-            return {}
+            return []
         
         current_time = datetime.now(tz)
         two_hours_later = current_time + timedelta(hours=2)
-        precip_map = {}
         
+        # Build hourly temperature map
+        hourly_temp_map = {}
+        for hour in hourly_forecast:
+            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
+            hour_key = dt.strftime("%Y-%m-%d %H")
+            hourly_temp_map[hour_key] = int(float(hour.get('temp', 0)))
+        
+        minutely_data = []
         for minute_data in minutely_forecast:
             dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
             
@@ -780,57 +787,84 @@ class QWeather(BasePlugin):
             if units == "imperial":
                 precip_amount = precip_amount / 25.4
             
-            # Track all precipitation data
+            # Only include if there's precipitation
             if precip_amount > 0:
+                # Get temperature from same hour in hourly forecast
                 hour_key = dt.strftime("%Y-%m-%d %H")
-                if hour_key not in precip_map:
-                    precip_map[hour_key] = []
-                precip_map[hour_key].append(precip_amount)
+                temperature = hourly_temp_map.get(hour_key, 0)
+                
+                minutely_data.append({
+                    "time": self.format_time(dt, time_format, hour_only=False),
+                    "temperature": temperature,
+                    "precipitation": 1.0,  # 100% when actual precipitation exists
+                    "rain": round(precip_amount, 2)
+                })
         
-        # Calculate average precipitation per hour
-        for hour_key in precip_map:
-            precip_map[hour_key] = sum(precip_map[hour_key]) / len(precip_map[hour_key])
-        
-        return precip_map
+        return minutely_data
 
     def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
-        """Merge minutely and hourly: use minutely precipitation to replace hourly when available"""
-        # Get minutely precipitation map (hour -> avg precipitation)
-        minutely_precip_map = self.get_minutely_precipitation_map(minutely_forecast, tz, units)
-        
-        hourly = []
+        """Merge minutely and hourly: show minutely data points first, then skip covered hours"""
         current_time = datetime.now(tz)
         
-        for hour in hourly_forecast[:24]:
+        # Get minutely data with hourly temperatures
+        minutely_data = self.get_minutely_data_with_hourly_temp(minutely_forecast, hourly_forecast, tz, time_format, units)
+        
+        # Build set of hours covered by minutely data
+        covered_hours = set()
+        for minute_item in minutely_data:
+            # Extract hour from time string (handle both 24h and 12h formats)
+            time_str = minute_item["time"]
+            # For 24h format: "21:15" -> "21"
+            # For 12h format: "9:15 PM" -> parse differently
+            if ":" in time_str:
+                hour_part = time_str.split(":")[0].strip()
+                # Handle 12h format
+                if "PM" in time_str or "AM" in time_str:
+                    # Skip complex parsing, will use datetime later
+                    pass
+                covered_hours.add(hour_part)
+        
+        # Actually, better approach: track which hours have minutely data by datetime
+        minutely_hours = set()
+        for minute_data in minutely_forecast:
+            dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
+            if dt >= current_time and dt <= current_time + timedelta(hours=2):
+                precip_amount = float(minute_data.get('precip', 0))
+                if precip_amount > 0:
+                    minutely_hours.add(dt.strftime("%Y-%m-%d %H"))
+        
+        # Start with minutely data
+        merged = minutely_data[:]
+        
+        # Add hourly data, skipping hours covered by minutely
+        for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
             
             if dt < current_time:
                 continue
-
+            
             hour_key = dt.strftime("%Y-%m-%d %H")
             
-            # Use minutely precipitation if available, otherwise use hourly
-            if hour_key in minutely_precip_map:
-                precip_prob = 1.0  # 100% when we have actual minutely precipitation data
-                precip_amount = minutely_precip_map[hour_key]
-            else:
-                precip_prob = float(hour.get('pop', 0)) / 100.0
-                precip_amount = float(hour.get('precip', 0))
-                if units == "imperial":
-                    precip_amount = precip_amount / 25.4
+            # Skip if this hour is covered by minutely data
+            if hour_key in minutely_hours:
+                continue
+            
+            precip_prob = float(hour.get('pop', 0)) / 100.0
+            precip_amount = float(hour.get('precip', 0))
+            if units == "imperial":
+                precip_amount = precip_amount / 25.4
 
-            hour_forecast = {
+            merged.append({
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2)
-            }
-            hourly.append(hour_forecast)
+            })
 
-            if len(hourly) >= 24:
+            if len(merged) >= 24:
                 break
 
-        return hourly
+        return merged[:24]
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
         data_points = []
