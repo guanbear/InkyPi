@@ -767,12 +767,26 @@ class QWeather(BasePlugin):
         current_time = datetime.now(tz)
         two_hours_later = current_time + timedelta(hours=2)
         
-        # Build hourly temperature map
-        hourly_temp_map = {}
+        # Build hourly temperature and precipitation probability map
+        hourly_map = {}
         for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
             hour_key = dt.strftime("%Y-%m-%d %H")
-            hourly_temp_map[hour_key] = int(float(hour.get('temp', 0)))
+            hourly_map[hour_key] = {
+                'temp': int(float(hour.get('temp', 0))),
+                'pop': float(hour.get('pop', 0)) / 100.0,
+                'time': dt.strftime("%H:%M")
+            }
+        
+        # Get the first available hourly data as fallback
+        first_hourly = None
+        if hourly_forecast:
+            first_hourly = {
+                'temp': int(float(hourly_forecast[0].get('temp', 0))),
+                'pop': float(hourly_forecast[0].get('pop', 0)) / 100.0
+            }
+        
+        logger.info(f"Hourly data map: {hourly_map}")
         
         minutely_data = []
         for minute_data in minutely_forecast:
@@ -789,16 +803,29 @@ class QWeather(BasePlugin):
             
             # Only include if there's precipitation
             if precip_amount > 0:
-                # Get temperature from same hour in hourly forecast
+                # Get temperature and pop from same hour in hourly forecast
                 hour_key = dt.strftime("%Y-%m-%d %H")
-                temperature = hourly_temp_map.get(hour_key, 0)
+                hourly_data = hourly_map.get(hour_key)
                 
-                minutely_data.append({
+                # If current hour's data not available, use first available hourly data
+                if hourly_data is None and first_hourly is not None:
+                    temperature = first_hourly['temp']
+                    precipitation_prob = first_hourly['pop']
+                elif hourly_data is not None:
+                    temperature = hourly_data['temp']
+                    precipitation_prob = hourly_data['pop']
+                else:
+                    temperature = 0
+                    precipitation_prob = 1.0
+                
+                minutely_item = {
                     "time": self.format_time(dt, time_format, hour_only=False),
                     "temperature": temperature,
-                    "precipitation": 1.0,  # 100% when actual precipitation exists
+                    "precipitation": precipitation_prob,
                     "rain": round(precip_amount, 2)
-                })
+                }
+                minutely_data.append(minutely_item)
+                logger.info(f"Minutely: {dt.strftime('%H:%M')} temp={temperature}°C pop={precipitation_prob*100:.0f}% rain={precip_amount:.2f}mm")
         
         return minutely_data
 
@@ -854,12 +881,14 @@ class QWeather(BasePlugin):
             if units == "imperial":
                 precip_amount = precip_amount / 25.4
 
-            merged.append({
+            hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2)
-            })
+            }
+            merged.append(hour_item)
+            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
 
             if len(merged) >= 24:
                 break

@@ -19,8 +19,8 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2025-12-01T14:03:44.931673+00:00",
-        "image_hash": "5a7755d5805e6f31625201359504c06009de565e22b0b63f2ed6321e31f9bfd7",
+        "refresh_time": "2025-12-01T14:11:32.243506+00:00",
+        "image_hash": "91a4387e27058b20ff623cc02394c1651d54d2e32f68e5eb2d50cf5f85a7d8fb",
         "refresh_type": "Manual Update",
         "plugin_id": "qweather"
     }
