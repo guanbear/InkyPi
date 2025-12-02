@@ -8,7 +8,8 @@
       "Read(//Users/guan/Downloads/microshare/**)",
       "Bash(grep:*)",
       "Bash(kill:*)",
-      "Bash(./start.sh)"
+      "Bash(./start.sh)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }
