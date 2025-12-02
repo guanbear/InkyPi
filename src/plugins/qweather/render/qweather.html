@@ -226,10 +226,11 @@
       const isDarkMode = {% if dark_mode %}true{% else %}false{% endif %};
       const gradient = ctx.createLinearGradient(left, 0, right, 0);
 
-      // Define colors
-      const dayColor = 'rgba(252, 204, 5, 0.9)'; // Yellow for day
-      const nightColorLight = 'rgba(30, 45, 100, 1)'; // Dark blue for night
-      const nightColorDark = 'rgba(100, 181, 246, 0.8)';
+      // Define colors - optimized for E6 display
+      // Use pure colors from E6 tuned palette for best contrast
+      const dayColor = 'rgb(255, 255, 0)'; // Pure yellow (E6 standard palette) - bright and clear
+      const nightColorLight = 'rgb(100, 64, 255)'; // Purple-blue (E6 tuned palette) - better contrast on e-ink
+      const nightColorDark = 'rgb(100, 181, 246)'; // Light blue for dark mode
       const nightColor = isDarkMode ? nightColorDark : nightColorLight;
 
       // Parse times
@@ -324,7 +325,7 @@
 
         // Use Chart.js's internal path rendering
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 5; // Increased from 3 to 5 for better visibility on E6
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
