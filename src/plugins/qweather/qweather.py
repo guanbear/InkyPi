@@ -765,28 +765,36 @@ class QWeather(BasePlugin):
 
         return hourly
 
-    def get_debug_setting(self):
-        """Get debug precipitation setting"""
-        debug_setting = False
-        if hasattr(self, 'current_settings'):
-            debug_setting = self.current_settings.get('debugPrecipitation') == 'true'
-        
-        # Fallback to environment variable
-        if not debug_setting:
-            import os
-            debug_setting = os.getenv('QWEATHER_DEBUG_PRECIPITATION', '').lower() == 'true'
-        
-        return debug_setting
-
-    def display_minutely_precipitation(self, minutely_forecast, tz, time_format, units):
-        """Display minutely precipitation data for next 2 hours if available"""
+    def get_minutely_data_with_hourly_temp(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        """Get minutely precipitation data with temperature from hourly forecast"""
         if not minutely_forecast:
             return []
         
         current_time = datetime.now(tz)
         two_hours_later = current_time + timedelta(hours=2)
-        minutely_data = []
         
+        # Build hourly temperature and precipitation probability map
+        hourly_map = {}
+        for hour in hourly_forecast:
+            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
+            hour_key = dt.strftime("%Y-%m-%d %H")
+            hourly_map[hour_key] = {
+                'temp': int(float(hour.get('temp', 0))),
+                'pop': float(hour.get('pop', 0)) / 100.0,
+                'time': dt.strftime("%H:%M")
+            }
+        
+        # Get the first available hourly data as fallback
+        first_hourly = None
+        if hourly_forecast:
+            first_hourly = {
+                'temp': int(float(hourly_forecast[0].get('temp', 0))),
+                'pop': float(hourly_forecast[0].get('pop', 0)) / 100.0
+            }
+        
+        logger.info(f"Hourly data map: {hourly_map}")
+        
+        minutely_data = []
         for minute_data in minutely_forecast:
             dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
             
@@ -801,71 +809,99 @@ class QWeather(BasePlugin):
             
             # Only include if there's precipitation
             if precip_amount > 0:
-                minutely_data.append({
-                    "time": self.format_time(dt, time_format, hour_only=False),  # Show minutes for minutely data
-                    "temperature": None,  # No temperature in minutely data
-                    "precipitation": 1.0,  # Always 100% since we're showing only when it precipitates
-                    "rain": round(precip_amount, 2),
-                    "is_minutely": True
-                })
+                # Get temperature and pop from same hour in hourly forecast
+                hour_key = dt.strftime("%Y-%m-%d %H")
+                hourly_data = hourly_map.get(hour_key)
+                
+                # If current hour's data not available, use first available hourly data
+                if hourly_data is None and first_hourly is not None:
+                    temperature = first_hourly['temp']
+                    precipitation_prob = first_hourly['pop']
+                elif hourly_data is not None:
+                    temperature = hourly_data['temp']
+                    precipitation_prob = hourly_data['pop']
+                else:
+                    temperature = 0
+                    precipitation_prob = 1.0
+                
+                minutely_item = {
+                    "time": self.format_time(dt, time_format, hour_only=False),
+                    "temperature": temperature,
+                    "precipitation": precipitation_prob,
+                    "rain": round(precip_amount, 2)
+                }
+                minutely_data.append(minutely_item)
+                logger.info(f"Minutely: {dt.strftime('%H:%M')} temp={temperature}°C pop={precipitation_prob*100:.0f}% rain={precip_amount:.2f}mm")
         
         return minutely_data
 
-    def get_hourly_forecast_adjusted(self, hourly_forecast, tz, time_format, units, minutely_count=0):
-        """Get hourly forecast with adjusted time range when minutely data is shown"""
-        hourly = []
+    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+        """Merge minutely and hourly: show minutely data points first, then skip covered hours"""
         current_time = datetime.now(tz)
-        max_hours = 24 - minutely_count  # Adjust range to keep total within 24 entries
 
-        for hour in hourly_forecast[:max_hours]:
+        # Get minutely data with hourly temperatures
+        minutely_data = self.get_minutely_data_with_hourly_temp(minutely_forecast, hourly_forecast, tz, time_format, units)
+
+        # Build set of hours covered by minutely data
+        covered_hours = set()
+        for minute_item in minutely_data:
+            # Extract hour from time string (handle both 24h and 12h formats)
+            time_str = minute_item["time"]
+            # For 24h format: "21:15" -> "21"
+            # For 12h format: "9:15 PM" -> parse differently
+            if ":" in time_str:
+                hour_part = time_str.split(":")[0].strip()
+                # Handle 12h format
+                if "PM" in time_str or "AM" in time_str:
+                    # Skip complex parsing, will use datetime later
+                    pass
+                covered_hours.add(hour_part)
+
+        # Actually, better approach: track which hours have minutely data by datetime
+        minutely_hours = set()
+        for minute_data in minutely_forecast:
+            dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
+            if dt >= current_time and dt <= current_time + timedelta(hours=2):
+                precip_amount = float(minute_data.get('precip', 0))
+                if precip_amount > 0:
+                    minutely_hours.add(dt.strftime("%Y-%m-%d %H"))
+
+        # Start with minutely data
+        merged = minutely_data[:]
+
+        # Add hourly data, skipping hours covered by minutely
+        for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
 
             if dt < current_time:
                 continue
 
+            hour_key = dt.strftime("%Y-%m-%d %H")
+
+            # Skip if this hour is covered by minutely data
+            if hour_key in minutely_hours:
+                continue
+
             precip_prob = float(hour.get('pop', 0)) / 100.0
             precip_amount = float(hour.get('precip', 0))
-
             if units == "imperial":
                 precip_amount = precip_amount / 25.4
 
-            hour_forecast = {
+            hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "time_full": dt.strftime("%H:%M"),  # Full time for chart logic
                 "hour": dt.hour,  # Hour number for even/odd logic
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
-                "rain": round(precip_amount, 2),
-                "is_minutely": False
+                "rain": round(precip_amount, 2)
             }
-            hourly.append(hour_forecast)
+            merged.append(hour_item)
+            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
 
-            if len(hourly) >= max_hours:
+            if len(merged) >= 24:
                 break
 
-        return hourly
-
-    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
-        """New logic: show minutely precipitation first, then hourly forecast"""
-        merged = []
-        
-        # Get debug setting
-        debug_precipitation = self.get_debug_setting() if hasattr(self, 'get_debug_setting') else False
-        
-        # First, get minutely precipitation data for next 2 hours
-        minutely_data = self.display_minutely_precipitation(minutely_forecast, tz, time_format, units)
-        
-        # If debug mode OR if there's actual precipitation, include minutely data
-        if debug_precipitation or minutely_data:
-            logger.info(f"Showing {len(minutely_data)} minutely data points")
-            merged.extend(minutely_data)
-        
-        # Then get hourly forecast with adjusted range
-        hourly_data = self.get_hourly_forecast_adjusted(hourly_forecast, tz, time_format, units, len(minutely_data))
-        merged.extend(hourly_data)
-        
-        logger.info(f"Total merged forecast: {len(merged)} data points ({len(minutely_data)} minutely, {len(hourly_data)} hourly)")
-        return merged[:24]  # Ensure max 24 entries
+        return merged[:24]
 
     def parse_data_points(self, current_weather, today_forecast, air_quality, tz, units, time_format, language="zh", display_style="default"):
         data_points = []
@@ -957,7 +993,6 @@ class QWeather(BasePlugin):
             aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
             # Use the new air-quality.png icon for qweather style
             aqi_icon_path = self.get_plugin_dir('icons/air-quality.png') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
-            logger.info(f"AQI icon path selected: {aqi_icon_path}, display_style: {display_style}")
             data_points.append({
                 "label": LABELS[language]["air_quality"],
                 "measurement": aqi,
@@ -1055,9 +1090,9 @@ class QWeather(BasePlugin):
             
             # Simplify headline by removing weather station prefix
             if headline:
-                # Remove patterns like "东城区气象台发布", "北京市气象台发布", etc.
+                # Remove patterns like "东城区气象台发布", "北京市气象台发布", "海南省气象局发布", etc.
                 import re
-                headline = re.sub(r'.*?[市区县]气象台发布', '', headline)
+                headline = re.sub(r'.*?气象[台局]发布', '', headline)
                 headline = headline.strip()
                 if not headline and event_name:
                     headline = event_name

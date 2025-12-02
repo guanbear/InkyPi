@@ -1,0 +1,8 @@
+{
+    "name": "InkyPi Debug - Hainan",
+    "display_type": "mock",
+    "resolution": [800, 480],
+    "orientation": "horizontal",
+    "timezone": "Asia/Shanghai",
+    "time_format": "24h"
+}

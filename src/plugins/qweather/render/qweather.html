@@ -182,7 +182,7 @@
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
-	const threshold = isImperial ? 0.0035 : 0.09;
+	const threshold = isImperial ? 0.0035 : 0.01;
 
 	// Text color based on theme
 	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') if plugin_settings.textColor else '#000000' }}"{% endif %};
