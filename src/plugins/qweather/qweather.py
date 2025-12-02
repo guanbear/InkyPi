@@ -531,7 +531,7 @@ class QWeather(BasePlugin):
         if merge_minutely:
             data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         else:
-            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units)
+            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units, weather_data)
 
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
@@ -841,15 +841,38 @@ class QWeather(BasePlugin):
         
         return minutely_data
 
-    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units):
+    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units, current_weather=None):
         """Parse hourly forecast data without minutely merging"""
         current_time = datetime.now(tz)
         hourly_data = []
 
+        # Add current weather as the first data point if available
+        if current_weather:
+            current_temp = int(float(current_weather.get('temp', 0)))
+            # Use first hour's precipitation data as fallback for current
+            first_hour_precip = 0
+            first_hour_pop = 0
+            if hourly_forecast and len(hourly_forecast) > 0:
+                first_hour_precip = float(hourly_forecast[0].get('precip', 0))
+                first_hour_pop = float(hourly_forecast[0].get('pop', 0)) / 100.0
+                if units == "imperial":
+                    first_hour_precip = first_hour_precip / 25.4
+
+            current_item = {
+                "time": self.format_time(current_time, time_format, hour_only=True),
+                "time_full": current_time.strftime("%H:%M"),
+                "hour": current_time.hour,
+                "temperature": current_temp,
+                "precipitation": first_hour_pop,
+                "rain": round(first_hour_precip, 2)
+            }
+            hourly_data.append(current_item)
+            logger.info(f"Current: {current_time.strftime('%H:%M')} temp={current_temp}°C")
+
         for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
 
-            if dt < current_time:
+            if dt <= current_time:
                 continue
 
             precip_prob = float(hour.get('pop', 0)) / 100.0
@@ -874,40 +897,32 @@ class QWeather(BasePlugin):
         return hourly_data[:24]
 
     def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
-        """Merge minutely and hourly: show minutely data points first, then skip covered hours"""
+        """Merge minutely precipitation into hourly data: keep hourly temperature, replace precipitation for covered hours"""
         current_time = datetime.now(tz)
 
-        # Get minutely data with hourly temperatures
-        minutely_data = self.get_minutely_data_with_hourly_temp(minutely_forecast, hourly_forecast, tz, time_format, units)
+        # Build minutely precipitation map by time
+        minutely_map = {}
+        if minutely_forecast:
+            for minute_data in minutely_forecast:
+                dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
+                if dt < current_time:
+                    continue
 
-        # Build set of hours covered by minutely data
-        covered_hours = set()
-        for minute_item in minutely_data:
-            # Extract hour from time string (handle both 24h and 12h formats)
-            time_str = minute_item["time"]
-            # For 24h format: "21:15" -> "21"
-            # For 12h format: "9:15 PM" -> parse differently
-            if ":" in time_str:
-                hour_part = time_str.split(":")[0].strip()
-                # Handle 12h format
-                if "PM" in time_str or "AM" in time_str:
-                    # Skip complex parsing, will use datetime later
-                    pass
-                covered_hours.add(hour_part)
-
-        # Actually, better approach: track which hours have minutely data by datetime
-        minutely_hours = set()
-        for minute_data in minutely_forecast:
-            dt = datetime.fromisoformat(minute_data['fxTime']).replace(tzinfo=tz)
-            if dt >= current_time and dt <= current_time + timedelta(hours=2):
                 precip_amount = float(minute_data.get('precip', 0))
-                if precip_amount > 0:
-                    minutely_hours.add(dt.strftime("%Y-%m-%d %H"))
+                if units == "imperial":
+                    precip_amount = precip_amount / 25.4
 
-        # Start with minutely data
-        merged = minutely_data[:]
+                # Store precipitation data for each minute
+                time_key = dt.strftime("%Y-%m-%d %H:%M")
+                minutely_map[time_key] = {
+                    'precip': precip_amount,
+                    'dt': dt
+                }
 
-        # Add hourly data, skipping hours covered by minutely
+        logger.info(f"Minutely data points: {len(minutely_map)}")
+
+        # Process hourly data
+        merged = []
         for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
 
@@ -916,25 +931,39 @@ class QWeather(BasePlugin):
 
             hour_key = dt.strftime("%Y-%m-%d %H")
 
-            # Skip if this hour is covered by minutely data
-            if hour_key in minutely_hours:
-                continue
+            # Check if this hour has minutely precipitation data
+            has_minutely = False
+            minutely_precip = 0
 
+            for time_key, minute_data in minutely_map.items():
+                if time_key.startswith(hour_key):
+                    has_minutely = True
+                    # Use the maximum precipitation in this hour
+                    minutely_precip = max(minutely_precip, minute_data['precip'])
+
+            # Use hourly temperature and pop
             precip_prob = float(hour.get('pop', 0)) / 100.0
-            precip_amount = float(hour.get('precip', 0))
-            if units == "imperial":
-                precip_amount = precip_amount / 25.4
+            temperature = int(float(hour.get('temp', 0)))
+
+            # If has minutely data, use minutely precipitation amount; otherwise use hourly
+            if has_minutely:
+                precip_amount = minutely_precip
+                logger.info(f"Hour {dt.strftime('%H:%M')} using minutely precip: {precip_amount:.2f}mm")
+            else:
+                precip_amount = float(hour.get('precip', 0))
+                if units == "imperial":
+                    precip_amount = precip_amount / 25.4
 
             hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
-                "time_full": dt.strftime("%H:%M"),  # Full time for chart logic
-                "hour": dt.hour,  # Hour number for even/odd logic
-                "temperature": int(float(hour.get('temp', 0))),
+                "time_full": dt.strftime("%H:%M"),
+                "hour": dt.hour,
+                "temperature": temperature,
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2)
             }
             merged.append(hour_item)
-            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
+            logger.info(f"Merged: {dt.strftime('%H:%M')} temp={temperature}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
 
             if len(merged) >= 24:
                 break

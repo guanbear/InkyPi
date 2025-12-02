@@ -219,10 +219,10 @@
         const isDarkMode = {% if dark_mode %}true{% else %}false{% endif %};
         const gradient = ctx.createLinearGradient(left, 0, right, 0);
 
-        // Calculate sunrise and sunset positions in minutes
-        const sunriseMin = parseTime(sunriseTime);
-        const sunsetMin = parseTime(sunsetTime);
-        const transitionWindow = 30; // 30 minutes transition window on each side
+        // Parse sunrise and sunset times (in minutes since midnight)
+        const sunriseMin = parseTime(sunriseTime);  // e.g., 07:18 = 438 min
+        const sunsetMin = parseTime(sunsetTime);    // e.g., 16:51 = 1011 min
+        const transitionMinutes = 30; // 30 minutes transition on one side
 
         // Define colors
         const dayColor = 'rgba(252, 204, 5, 0.7)'; // Yellow for day
@@ -230,52 +230,129 @@
         const nightColorDark = 'rgba(100, 181, 246, 0.6)'; // Light blue for dark mode
         const nightColor = isDarkMode ? nightColorDark : nightColorLight;
 
-        // Find the positions of sunrise and sunset in the data array
-        const sunriseIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - sunriseMin) < 30);
-        const sunsetIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - sunsetMin) < 30);
+        // Get first and last time points
+        const firstTimeMin = parseTime(timeFull[0]);      // e.g., 15:41 = 941 min
+        const lastTimeMinRaw = parseTime(timeFull[timeFull.length - 1]);  // e.g., 14:00 = 840 min
 
-        // Calculate exact positions as fractions (0 to 1)
-        const sunrisePosition = sunriseIndex !== -1 ? sunriseIndex / (timeFull.length - 1) : -1;
-        const sunsetPosition = sunsetIndex !== -1 ? sunsetIndex / (timeFull.length - 1) : -1;
+        // Determine if we cross midnight
+        let lastTimeMin = lastTimeMinRaw;
+        if (lastTimeMinRaw < firstTimeMin) {
+          lastTimeMin = lastTimeMinRaw + 24 * 60; // Add 24 hours
+        }
+        const timeSpanMin = lastTimeMin - firstTimeMin;
 
-        // Calculate transition boundaries (30 minutes before and after)
-        const sunriseStartPos = sunrisePosition - (transitionWindow / 60) / 24; // Approximate
-        const sunriseEndPos = sunrisePosition + (transitionWindow / 60) / 24;
-        const sunsetStartPos = sunsetPosition - (transitionWindow / 60) / 24;
-        const sunsetEndPos = sunsetPosition + (transitionWindow / 60) / 24;
+        console.log('First time:', timeFull[0], '=', firstTimeMin, 'min');
+        console.log('Last time:', timeFull[timeFull.length - 1], '=', lastTimeMinRaw, 'min (adjusted:', lastTimeMin, ')');
+        console.log('Sunrise today:', sunriseTime, '=', sunriseMin, 'min');
+        console.log('Sunset today:', sunsetTime, '=', sunsetMin, 'min');
+        console.log('Time span:', timeSpanMin, 'min');
 
-        // Add color stops for the gradient
-        // Before sunrise: pure night
-        if (sunrisePosition > 0) {
-          gradient.addColorStop(0, nightColor);
-          gradient.addColorStop(Math.max(0, sunriseStartPos), nightColor);
+        // Helper function to convert time (in minutes) to gradient position (0 to 1)
+        function timeToPosition(timeMin) {
+          if (timeSpanMin === 0) return 0;
+
+          let adjustedTime = timeMin;
+          // If time is before first time, it must be next day
+          if (timeMin < firstTimeMin) {
+            adjustedTime = timeMin + 24 * 60;
+          }
+
+          const position = (adjustedTime - firstTimeMin) / timeSpanMin;
+          return position;
         }
 
-        // Sunrise transition: night -> day
-        if (sunrisePosition >= 0) {
-          gradient.addColorStop(Math.max(0, sunriseStartPos), nightColor);
-          gradient.addColorStop(Math.min(1, sunrisePosition), dayColor); // Center at sunrise
-          gradient.addColorStop(Math.min(1, sunriseEndPos), dayColor);
+        // Determine which sunrise/sunset events are in our time range
+        // Sunset today
+        const todaySunsetPos = timeToPosition(sunsetMin);
+        const todaySunsetInRange = todaySunsetPos >= 0 && todaySunsetPos <= 1;
+
+        // Sunrise today (might be before our range if we start in the afternoon)
+        const todaySunrisePos = timeToPosition(sunriseMin);
+        const todaySunriseInRange = todaySunrisePos >= 0 && todaySunrisePos <= 1;
+
+        // Tomorrow's sunrise (add 24 hours)
+        const tomorrowSunriseMin = sunriseMin + 24 * 60;
+        const tomorrowSunrisePos = timeToPosition(tomorrowSunriseMin);
+        const tomorrowSunriseInRange = tomorrowSunrisePos >= 0 && tomorrowSunrisePos <= 1;
+
+        console.log('Today sunset pos:', todaySunsetPos, 'in range:', todaySunsetInRange);
+        console.log('Today sunrise pos:', todaySunrisePos, 'in range:', todaySunriseInRange);
+        console.log('Tomorrow sunrise pos:', tomorrowSunrisePos, 'in range:', tomorrowSunriseInRange);
+
+        // Determine start and end colors
+        // Is the first time point during day or night?
+        let firstIsDay = false;
+        if (firstTimeMin >= sunriseMin && firstTimeMin < sunsetMin) {
+          firstIsDay = true;  // Between today's sunrise and sunset
         }
 
-        // Day: pure yellow (between sunrise and sunset)
-        if (sunrisePosition >= 0 && sunsetPosition >= 0) {
-          gradient.addColorStop(Math.min(1, sunriseEndPos), dayColor);
-          gradient.addColorStop(Math.max(0, sunsetStartPos), dayColor);
+        // Is the last time point during day or night?
+        let lastIsDay = false;
+        // Need to check against tomorrow's sunrise since we might cross midnight
+        const lastTimeMinOriginal = parseTime(timeFull[timeFull.length - 1]);
+        if (lastTimeMinOriginal < sunriseMin) {
+          // Last time is early morning, before sunrise
+          lastIsDay = false;
+        } else if (lastTimeMinOriginal >= sunriseMin && lastTimeMinOriginal < sunsetMin) {
+          // Last time is between sunrise and sunset
+          lastIsDay = true;
+        } else {
+          // Last time is after sunset
+          lastIsDay = false;
         }
 
-        // Sunset transition: day -> night
-        if (sunsetPosition >= 0) {
-          gradient.addColorStop(Math.max(0, sunsetStartPos), dayColor);
-          gradient.addColorStop(Math.min(1, sunsetPosition), nightColor); // Center at sunset
-          gradient.addColorStop(Math.min(1, sunsetEndPos), nightColor);
+        console.log('First is day:', firstIsDay);
+        console.log('Last is day:', lastIsDay);
+
+        // Build gradient
+        gradient.addColorStop(0, firstIsDay ? dayColor : nightColor);
+
+        // Add sunset transition if in range (transition happens AFTER sunset)
+        if (todaySunsetInRange) {
+          const sunsetStartPos = todaySunsetPos; // Transition starts at sunset time
+          const sunsetEndPos = Math.min(1, timeToPosition(sunsetMin + transitionMinutes)); // Ends 30 min after
+
+          console.log('Adding sunset transition:', sunsetStartPos, 'to', sunsetEndPos);
+
+          // At sunset time, start with day color
+          gradient.addColorStop(sunsetStartPos, dayColor);
+          // 30 minutes after sunset, transition to night color
+          if (sunsetEndPos > sunsetStartPos) {
+            gradient.addColorStop(sunsetEndPos, nightColor);
+          }
         }
 
-        // After sunset: pure night
-        if (sunsetPosition < 1) {
-          gradient.addColorStop(Math.max(0, sunsetEndPos), nightColor);
-          gradient.addColorStop(1, nightColor);
+        // Add sunrise transition if today's sunrise is in range (transition happens BEFORE sunrise)
+        if (todaySunriseInRange) {
+          const sunriseStartPos = Math.max(0, timeToPosition(sunriseMin - transitionMinutes)); // Starts 30 min before
+          const sunriseEndPos = todaySunrisePos; // Ends at sunrise time
+
+          console.log('Adding today sunrise transition:', sunriseStartPos, 'to', sunriseEndPos);
+
+          // 30 minutes before sunrise, start transition from night
+          if (sunriseStartPos < sunriseEndPos) {
+            gradient.addColorStop(sunriseStartPos, nightColor);
+          }
+          // At sunrise time, reach day color
+          gradient.addColorStop(sunriseEndPos, dayColor);
         }
+
+        // Add tomorrow's sunrise transition if in range (transition happens BEFORE sunrise)
+        if (tomorrowSunriseInRange) {
+          const sunriseStartPos = Math.max(0, timeToPosition(tomorrowSunriseMin - transitionMinutes)); // Starts 30 min before
+          const sunriseEndPos = tomorrowSunrisePos; // Ends at sunrise time
+
+          console.log('Adding tomorrow sunrise transition:', sunriseStartPos, 'to', sunriseEndPos);
+
+          // 30 minutes before sunrise, start transition from night
+          if (sunriseStartPos < sunriseEndPos) {
+            gradient.addColorStop(sunriseStartPos, nightColor);
+          }
+          // At sunrise time, reach day color
+          gradient.addColorStop(sunriseEndPos, dayColor);
+        }
+
+        gradient.addColorStop(1, lastIsDay ? dayColor : nightColor);
 
         // Apply gradient to temperature line dataset
         if (chart.data.datasets[0]) {
@@ -283,8 +360,14 @@
         }
 
         ctx.restore();
-      },
+      }
+    });
+
+    // Register separate plugin for drawing sunrise/sunset icons
+    Chart.register({
+      id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
+        // Draw icons after datasets but before axis labels
         const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
 
         if (!sunriseTime && !sunsetTime) return;
@@ -293,7 +376,17 @@
 
         // Draw sunrise icon
         if (sunriseTime) {
-          const sunriseIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - parseTime(sunriseTime)) < 30);
+          // Find the closest time point to sunrise
+          let sunriseIndex = -1;
+          let minDiff = Infinity;
+          timeFull.forEach((t, i) => {
+            const diff = Math.abs(parseTime(t) - parseTime(sunriseTime));
+            if (diff < minDiff) {
+              minDiff = diff;
+              sunriseIndex = i;
+            }
+          });
+
           if (sunriseIndex !== -1) {
             const xPos = x.getPixelForValue(sunriseIndex);
             const iconSize = 14;
@@ -308,7 +401,17 @@
 
         // Draw sunset icon
         if (sunsetTime) {
-          const sunsetIndex = timeFull.findIndex(t => Math.abs(parseTime(t) - parseTime(sunsetTime)) < 30);
+          // Find the closest time point to sunset
+          let sunsetIndex = -1;
+          let minDiff = Infinity;
+          timeFull.forEach((t, i) => {
+            const diff = Math.abs(parseTime(t) - parseTime(sunsetTime));
+            if (diff < minDiff) {
+              minDiff = diff;
+              sunsetIndex = i;
+            }
+          });
+
           if (sunsetIndex !== -1) {
             const xPos = x.getPixelForValue(sunsetIndex);
             const iconSize = 14;
@@ -426,7 +529,7 @@
               tickLength: 0,
               display: false // Hide x-axis grid
             },
-            offset: true,
+            offset: false,  // Remove padding at start and end
             gridLines: {
                 drawBorder: false,
             }
