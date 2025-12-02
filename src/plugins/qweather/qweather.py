@@ -526,7 +526,13 @@ class QWeather(BasePlugin):
 
         data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings, air_quality)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language, display_style)
-        data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
+
+        merge_minutely = settings.get("mergeMinutelyData", "false").lower() == "true"
+        if merge_minutely:
+            data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
+        else:
+            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units)
+
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
         if data['forecast']:
@@ -834,6 +840,38 @@ class QWeather(BasePlugin):
                 logger.info(f"Minutely: {dt.strftime('%H:%M')} temp={temperature}°C pop={precipitation_prob*100:.0f}% rain={precip_amount:.2f}mm")
         
         return minutely_data
+
+    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units):
+        """Parse hourly forecast data without minutely merging"""
+        current_time = datetime.now(tz)
+        hourly_data = []
+
+        for hour in hourly_forecast:
+            dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
+
+            if dt < current_time:
+                continue
+
+            precip_prob = float(hour.get('pop', 0)) / 100.0
+            precip_amount = float(hour.get('precip', 0))
+            if units == "imperial":
+                precip_amount = precip_amount / 25.4
+
+            hour_item = {
+                "time": self.format_time(dt, time_format, hour_only=True),
+                "time_full": dt.strftime("%H:%M"),
+                "hour": dt.hour,
+                "temperature": int(float(hour.get('temp', 0))),
+                "precipitation": precip_prob,
+                "rain": round(precip_amount, 2)
+            }
+            hourly_data.append(hour_item)
+            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
+
+            if len(hourly_data) >= 24:
+                break
+
+        return hourly_data[:24]
 
     def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
         """Merge minutely and hourly: show minutely data points first, then skip covered hours"""
