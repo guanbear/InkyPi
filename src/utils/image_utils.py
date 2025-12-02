@@ -195,10 +195,10 @@ def get_e6_palette(palette_type='standard'):
 
 def optimize_for_e6_display(image, display_type, palette_type='standard', comparison_mode=False):
     """
-    Optimize image for Waveshare e6 (ACeP) displays with improved color mapping and dithering.
+    Optimize image for Waveshare e6 (ACeP) displays with palette-based color quantization.
 
     Args:
-        image (PIL.Image): Source image to optimize
+        image (PIL.Image): Source image to optimize (should already have enhancements applied)
         display_type (str): Display model identifier (e.g., 'epd7in3e')
         palette_type (str): 'standard', 'tuned', or 'original' palette
         comparison_mode (bool): If True, split image to show both palettes side by side
@@ -218,7 +218,6 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
     if comparison_mode:
         return _create_comparison_image(image, display_type)
 
-    # Original InkyPi mode - no optimization
     if palette_type == 'original':
         logger.info("Using original InkyPi mode (no e6 optimization)")
         return image
@@ -228,21 +227,7 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
     palette_image = Image.new('P', (1, 1))
     palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
 
-    # Enhanced image processing for better E6 display quality
-    # Waveshare official recommended settings
-    enhanced = ImageEnhance.Color(image).enhance(1.2)  # Saturation: 1.2
-
-    # Normal contrast for better color accuracy
-    enhanced = ImageEnhance.Contrast(enhanced).enhance(1.0)  # Contrast: 1.0
-
-    # Slight sharpness improvement
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.1)  # Sharpness: 1.1
-
-    # Normal brightness
-    enhanced = ImageEnhance.Brightness(enhanced).enhance(1.0)  # Brightness: 1.0
-
-    # 4.使用Floyd-Steinberg抖动算法进行色彩量化
-    optimized = enhanced.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+    optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
 
     return optimized.convert('RGB')
 
@@ -252,7 +237,7 @@ def _create_comparison_image(image, display_type):
     Left: standard, Middle: tuned, Right: original (no optimization)
 
     Args:
-        image (PIL.Image): Source image
+        image (PIL.Image): Source image (should already have enhancements applied)
         display_type (str): Display model identifier
 
     Returns:
@@ -263,40 +248,22 @@ def _create_comparison_image(image, display_type):
     width, height = image.size
     third_width = width // 3
 
-    # Split image into three parts
     left_part = image.crop((0, 0, third_width, height))
     middle_part = image.crop((third_width, 0, third_width * 2, height))
     right_part = image.crop((third_width * 2, 0, width, height))
 
-    # Apply standard palette to left
     standard_palette = get_e6_palette('standard')
     standard_pal_image = Image.new('P', (1, 1))
     standard_pal_image.putpalette(standard_palette + [0] * (768 - len(standard_palette)))
 
-    # Apply tuned palette to middle
     tuned_palette = get_e6_palette('tuned')
     tuned_pal_image = Image.new('P', (1, 1))
     tuned_pal_image.putpalette(tuned_palette + [0] * (768 - len(tuned_palette)))
 
-    # Enhance left and middle parts
-    enhanced_left = ImageEnhance.Color(left_part).enhance(1.2)
-    enhanced_left = ImageEnhance.Contrast(enhanced_left).enhance(1.0)
-    enhanced_left = ImageEnhance.Sharpness(enhanced_left).enhance(1.1)
-    enhanced_left = ImageEnhance.Brightness(enhanced_left).enhance(1.0)
-
-    enhanced_middle = ImageEnhance.Color(middle_part).enhance(1.2)
-    enhanced_middle = ImageEnhance.Contrast(enhanced_middle).enhance(1.0)
-    enhanced_middle = ImageEnhance.Sharpness(enhanced_middle).enhance(1.1)
-    enhanced_middle = ImageEnhance.Brightness(enhanced_middle).enhance(1.0)
-
-    # Quantize left and middle with palettes
-    optimized_left = enhanced_left.quantize(palette=standard_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
-    optimized_middle = enhanced_middle.quantize(palette=tuned_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
-
-    # Right part stays original (no optimization)
+    optimized_left = left_part.quantize(palette=standard_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
+    optimized_middle = middle_part.quantize(palette=tuned_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
     optimized_right = right_part
 
-    # Combine three parts
     result = Image.new('RGB', (width, height))
     result.paste(optimized_left, (0, 0))
     result.paste(optimized_middle, (third_width, 0))
