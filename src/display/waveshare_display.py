@@ -104,7 +104,13 @@ class WaveshareDisplay(AbstractDisplay):
             raise ValueError(f"No image provided.")
 
         display_type = self.device_config.get_config("display_type")
-        image = optimize_for_e6_display(image, display_type)
+
+        # Get e6 palette settings from image_settings
+        image_settings = self.device_config.get_config("image_settings") or {}
+        palette_type = image_settings.get("e6_palette", "standard")
+        comparison_mode = image_settings.get("e6_comparison", False)
+
+        image = optimize_for_e6_display(image, display_type, palette_type, comparison_mode)
 
         self.epd_display_init()
 
