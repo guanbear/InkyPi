@@ -1,5 +1,4 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=92cd06d2544958bb607195395e62eeb9&plugin=AMap.PlaceSearch,AMap.AutoComplete"></script>
 
 <div class="form-group">
     <label for="language" class="form-label">
@@ -21,7 +20,11 @@
         <span id="longitudeLabel">Longitude</span>
         <input readonly type="text" id="longitude" name="longitude" class="form-input" />
     </div>
-    <button type="button" id="openMap" class="action-button compact">Select Location</button>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" id="getLocationByIP" class="action-button compact">📍 Get Location by IP</button>
+        <button type="button" id="openMap" class="action-button compact">🗺️ Select on Map</button>
+        <button type="button" id="setDefault" class="action-button compact">⭐ Set as Default</button>
+    </div>
 </div>
 
 <div class="form-group">
@@ -132,7 +135,11 @@
         <span class="close-button" onclick="closeModal('mapModal')">×</span>
         <h2 id="modalTitle">Select Location</h2>
         <div class="separator"></div>
-        <div id="map" style="width: 100%; height: 200px; margin: 10px 0px;"></div>
+        <div class="form-group">
+            <input type="text" id="searchInput" placeholder="Search for a location..." class="form-input" style="width: 100%;" />
+            <div id="searchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; margin-top: 5px; display: none;"></div>
+        </div>
+        <div id="map" style="width: 100%; height: 300px; margin: 10px 0px;"></div>
         <button id="closeMap" class="action-button">Save</button>
     </div>
 </div>
@@ -291,48 +298,144 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-
-        const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         const $latitude = document.querySelector('#latitude');
         const $longitude = document.querySelector('#longitude');
         const $openMap = document.querySelector('#openMap');
-        const $mapModal = document.querySelector('#mapModal');
         const $closeMap = document.querySelector('#closeMap');
         const $language = document.querySelector('#language');
+        const $getLocationByIP = document.querySelector('#getLocationByIP');
+        const $setDefault = document.querySelector('#setDefault');
+        const $searchInput = document.querySelector('#searchInput');
+        const $searchResults = document.querySelector('#searchResults');
 
         let latitude = +$latitude.value || 39.9042;
         let longitude = +$longitude.value || 116.4074;
-        let zoom = $latitude.value ? 4.5 : 4;
 
-        let map, marker;
+        let map, marker, autoComplete;
 
         // Language change handler
         $language.addEventListener('change', (e) => {
             updateLanguage(e.target.value);
         });
 
+        // Get location by IP button
+        $getLocationByIP.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/amap/ip_location');
+                const data = await response.json();
+
+                if (data.success) {
+                    $latitude.value = data.latitude;
+                    $longitude.value = data.longitude;
+                    latitude = data.latitude;
+                    longitude = data.longitude;
+
+                    alert(`Location obtained: ${data.city || ''} ${data.province || ''}\nLat: ${data.latitude}, Lng: ${data.longitude}`);
+                } else {
+                    alert('Failed to get location: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error getting location: ' + error.message);
+            }
+        });
+
+        // Set as default button
+        $setDefault.addEventListener('click', async () => {
+            const lat = parseFloat($latitude.value);
+            const lng = parseFloat($longitude.value);
+
+            if (!lat || !lng) {
+                alert('Please set a valid location first');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/amap/save_default_location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: lat, longitude: lng })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Default location saved successfully!');
+                } else {
+                    alert('Failed to save default location: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error saving default location: ' + error.message);
+            }
+        });
+
+        // Initialize Amap when opening modal
         $openMap.addEventListener('click', () => {
-            openModal('mapModal')
+            openModal('mapModal');
             setTimeout(() => {
                 if (!map) {
-                    map = L.map('map').setView([latitude, longitude], zoom);
-                    L.tileLayer(OSM_TILE_URL).addTo(map);
-                    marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+                    // Initialize Amap
+                    map = new AMap.Map('map', {
+                        zoom: 10,
+                        center: [longitude, latitude],
+                        viewMode: '2D'
+                    });
 
-                    map.on('click', event => {
-                        marker.setLatLng(event.latlng);
+                    // Add marker
+                    marker = new AMap.Marker({
+                        position: [longitude, latitude],
+                        draggable: true
+                    });
+                    map.add(marker);
+
+                    // Update coordinates when marker is dragged
+                    marker.on('dragend', (e) => {
+                        const position = marker.getPosition();
+                        latitude = position.lat;
+                        longitude = position.lng;
+                    });
+
+                    // Add marker on map click
+                    map.on('click', (e) => {
+                        const lnglat = e.lnglat;
+                        marker.setPosition([lnglat.lng, lnglat.lat]);
+                        latitude = lnglat.lat;
+                        longitude = lnglat.lng;
+                    });
+
+                    // Initialize AutoComplete for search
+                    autoComplete = new AMap.AutoComplete({
+                        input: 'searchInput'
+                    });
+
+                    // Handle search selection
+                    autoComplete.on('select', (e) => {
+                        const poi = e.poi;
+                        if (poi && poi.location) {
+                            const lng = poi.location.lng;
+                            const lat = poi.location.lat;
+
+                            // Update map and marker
+                            map.setCenter([lng, lat]);
+                            marker.setPosition([lng, lat]);
+                            latitude = lat;
+                            longitude = lng;
+
+                            // Hide search results
+                            $searchResults.style.display = 'none';
+                        }
                     });
                 }
             }, 100);
         });
 
+        // Save location when closing map
         $closeMap.addEventListener('click', () => {
-            const position = marker.getLatLng().wrap();
-            $latitude.value = position.lat;
-            $longitude.value = position.lng;
+            $latitude.value = latitude.toFixed(6);
+            $longitude.value = longitude.toFixed(6);
             closeModal('mapModal');
         });
 
+        // Load settings
         if (loadPluginSettings) {
             document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
             document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
