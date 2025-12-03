@@ -233,40 +233,33 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
 
 def _create_comparison_image(image, display_type):
     """
-    Create side-by-side comparison of different palettes.
-    Left: standard, Middle: tuned, Right: original (no optimization)
+    Create side-by-side comparison of E6 optimization vs original.
+    Left: original (no e6 optimization), Right: standard E6 palette
 
     Args:
         image (PIL.Image): Source image (should already have enhancements applied)
         display_type (str): Display model identifier
 
     Returns:
-        PIL.Image: Split image with three palettes
+        PIL.Image: Split image comparing original vs E6 optimized
     """
-    logger.info("Creating palette comparison image (left: standard, middle: tuned, right: original)")
+    logger.info("Creating E6 comparison image (left: original no optimization, right: standard E6 palette)")
 
     width, height = image.size
-    third_width = width // 3
+    half_width = width // 2
 
-    left_part = image.crop((0, 0, third_width, height))
-    middle_part = image.crop((third_width, 0, third_width * 2, height))
-    right_part = image.crop((third_width * 2, 0, width, height))
+    left_part = image.crop((0, 0, half_width, height))
+    right_part = image.crop((half_width, 0, width, height))
 
+    # Right part: Apply standard E6 palette
     standard_palette = get_e6_palette('standard')
     standard_pal_image = Image.new('P', (1, 1))
     standard_pal_image.putpalette(standard_palette + [0] * (768 - len(standard_palette)))
 
-    tuned_palette = get_e6_palette('tuned')
-    tuned_pal_image = Image.new('P', (1, 1))
-    tuned_pal_image.putpalette(tuned_palette + [0] * (768 - len(tuned_palette)))
-
-    optimized_left = left_part.quantize(palette=standard_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
-    optimized_middle = middle_part.quantize(palette=tuned_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
-    optimized_right = right_part
+    optimized_right = right_part.quantize(palette=standard_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
 
     result = Image.new('RGB', (width, height))
-    result.paste(optimized_left, (0, 0))
-    result.paste(optimized_middle, (third_width, 0))
-    result.paste(optimized_right, (third_width * 2, 0))
+    result.paste(left_part, (0, 0))
+    result.paste(optimized_right, (half_width, 0))
 
     return result
