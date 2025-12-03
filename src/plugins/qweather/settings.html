@@ -154,6 +154,11 @@
             latitudeLabel: 'Latitude',
             longitudeLabel: 'Longitude',
             selectLocation: 'Select Location',
+            getLocationByIP: '📍 Get Location by IP',
+            selectOnMap: '🗺️ Select on Map',
+            setAsDefault: '⭐ Set as Default',
+            searchPlaceholder: 'Search for a location...',
+            searchButton: 'Search',
             unitsLabel: '🌡️ Units',
             themeModeLabel: '🎨 Theme Mode',
             themeLight: 'Light',
@@ -185,7 +190,11 @@
             forecastLabel: 'Forecast',
             daysLabel: 'days',
             modalTitle: 'Select Location',
-            saveButton: 'Save'
+            saveButton: 'Save',
+            enterKeyword: 'Please enter a search keyword',
+            noResults: 'No results found',
+            mapLoadFailed: 'Map library failed to load. Please refresh the page.',
+            mapCreateFailed: 'Failed to create map: '
         },
         zh: {
             languageLabel: '🌐 语言',
@@ -193,6 +202,11 @@
             latitudeLabel: '纬度',
             longitudeLabel: '经度',
             selectLocation: '选择位置',
+            getLocationByIP: '📍 通过IP获取位置',
+            selectOnMap: '�图 在地图上选择',
+            setAsDefault: '⭐ 设为默认',
+            searchPlaceholder: '搜索地点...',
+            searchButton: '搜索',
             unitsLabel: '🌡️ 单位',
             themeModeLabel: '🎨 主题模式',
             themeLight: '浅色',
@@ -224,7 +238,11 @@
             forecastLabel: '天气预报',
             daysLabel: '天',
             modalTitle: '选择位置',
-            saveButton: '保存'
+            saveButton: '保存',
+            enterKeyword: '请输入搜索关键词',
+            noResults: '未找到结果',
+            mapLoadFailed: '地图加载失败，请刷新页面',
+            mapCreateFailed: '创建地图失败：'
         }
     };
 
@@ -234,7 +252,11 @@
         document.getElementById('locationLabel').textContent = t.locationLabel;
         document.getElementById('latitudeLabel').textContent = t.latitudeLabel;
         document.getElementById('longitudeLabel').textContent = t.longitudeLabel;
-        document.getElementById('openMap').textContent = t.selectLocation;
+        document.getElementById('getLocationByIP').textContent = t.getLocationByIP;
+        document.getElementById('openMap').textContent = t.selectOnMap;
+        document.getElementById('setDefault').textContent = t.setAsDefault;
+        document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+        document.getElementById('searchButton').textContent = t.searchButton;
         document.getElementById('unitsLabel').textContent = t.unitsLabel;
         document.getElementById('themeModeLabel').textContent = t.themeModeLabel;
         document.getElementById('displayStyleLabel').textContent = t.displayStyleLabel;
@@ -313,10 +335,12 @@
         let longitude = +$longitude.value || 116.4074;
 
         let map, marker;
+        let currentLang = 'zh'; // Default language
 
         // Language change handler
         $language.addEventListener('change', (e) => {
-            updateLanguage(e.target.value);
+            currentLang = e.target.value;
+            updateLanguage(currentLang);
         });
 
         // Get location by IP button
@@ -369,117 +393,155 @@
 
         // Initialize Amap when opening modal
         $openMap.addEventListener('click', async () => {
+            console.log('Opening map modal...');
             openModal('mapModal');
 
             // If no location set, try to get IP location first
             if (!latitude || !longitude || (latitude === 39.9042 && longitude === 116.4074)) {
+                console.log('No location set, trying IP location...');
                 try {
                     const response = await fetch('/api/amap/ip_location');
                     const data = await response.json();
+                    console.log('IP location response:', data);
                     if (data.success) {
                         latitude = data.latitude;
                         longitude = data.longitude;
                         $latitude.value = latitude;
                         $longitude.value = longitude;
+                        console.log('IP location obtained:', latitude, longitude);
                     }
                 } catch (error) {
                     console.error('Failed to get IP location:', error);
                 }
+            } else {
+                console.log('Using existing location:', latitude, longitude);
             }
 
             setTimeout(() => {
+                console.log('Initializing map with center:', longitude, latitude);
+
                 if (!map) {
-                    // Initialize Amap
-                    map = new AMap.Map('map', {
-                        zoom: 12,
-                        center: [longitude, latitude],
-                        viewMode: '2D',
-                        resizeEnable: true
-                    });
+                    console.log('Creating new map instance...');
 
-                    // Add marker
-                    marker = new AMap.Marker({
-                        position: [longitude, latitude],
-                        draggable: true
-                    });
-                    map.add(marker);
+                    // Check if AMap is loaded
+                    if (typeof AMap === 'undefined') {
+                        console.error('AMap library not loaded!');
+                        alert(translations[currentLang].mapLoadFailed);
+                        return;
+                    }
 
-                    // Update coordinates when marker is dragged
-                    marker.on('dragend', (e) => {
-                        const position = marker.getPosition();
-                        latitude = position.lat;
-                        longitude = position.lng;
-                    });
+                    try {
+                        // Initialize Amap
+                        map = new AMap.Map('map', {
+                            zoom: 12,
+                            center: [longitude, latitude],
+                            viewMode: '2D',
+                            resizeEnable: true
+                        });
 
-                    // Add marker on map click
-                    map.on('click', (e) => {
-                        const lnglat = e.lnglat;
-                        marker.setPosition([lnglat.lng, lnglat.lat]);
-                        latitude = lnglat.lat;
-                        longitude = lnglat.lng;
-                    });
+                        console.log('Map created successfully');
 
-                    // Initialize PlaceSearch for search button
-                    const placeSearch = new AMap.PlaceSearch({
-                        city: '全国',
-                        pageSize: 10
-                    });
+                        // Add marker
+                        marker = new AMap.Marker({
+                            position: [longitude, latitude],
+                            draggable: true
+                        });
+                        map.add(marker);
+                        console.log('Marker added');
 
-                    // Search button handler
-                    const $searchButton = document.querySelector('#searchButton');
-                    $searchButton.addEventListener('click', () => {
-                        const keyword = $searchInput.value.trim();
-                        if (!keyword) {
-                            alert('Please enter a search keyword');
-                            return;
-                        }
+                        // Update coordinates when marker is dragged
+                        marker.on('dragend', (e) => {
+                            const position = marker.getPosition();
+                            latitude = position.lat;
+                            longitude = position.lng;
+                            console.log('Marker dragged to:', latitude, longitude);
+                        });
 
-                        placeSearch.search(keyword, (status, result) => {
-                            if (status === 'complete' && result.poiList && result.poiList.pois.length > 0) {
-                                const pois = result.poiList.pois;
+                        // Add marker on map click
+                        map.on('click', (e) => {
+                            const lnglat = e.lnglat;
+                            marker.setPosition([lnglat.lng, lnglat.lat]);
+                            latitude = lnglat.lat;
+                            longitude = lnglat.lng;
+                            console.log('Map clicked, marker moved to:', latitude, longitude);
+                        });
 
-                                // Show search results
-                                $searchResults.innerHTML = '';
-                                $searchResults.style.display = 'block';
+                        // Initialize PlaceSearch for search button
+                        const placeSearch = new AMap.PlaceSearch({
+                            pageSize: 10
+                        });
 
-                                pois.forEach((poi, index) => {
-                                    const div = document.createElement('div');
-                                    div.style.padding = '8px';
-                                    div.style.cursor = 'pointer';
-                                    div.style.borderBottom = '1px solid #eee';
-                                    div.textContent = `${poi.name} - ${poi.address || ''}`;
+                        console.log('PlaceSearch initialized');
 
-                                    div.addEventListener('click', () => {
-                                        const location = poi.location;
-                                        map.setCenter([location.lng, location.lat]);
-                                        map.setZoom(15);
-                                        marker.setPosition([location.lng, location.lat]);
-                                        latitude = location.lat;
-                                        longitude = location.lng;
-                                        $searchResults.style.display = 'none';
-                                        $searchInput.value = poi.name;
+                        // Search button handler
+                        const $searchButton = document.querySelector('#searchButton');
+                        $searchButton.addEventListener('click', () => {
+                            const keyword = $searchInput.value.trim();
+                            console.log('Search clicked, keyword:', keyword);
+
+                            if (!keyword) {
+                                alert(translations[currentLang].enterKeyword);
+                                return;
+                            }
+
+                            placeSearch.search(keyword, (status, result) => {
+                                console.log('Search status:', status);
+                                console.log('Search result:', result);
+
+                                if (status === 'complete' && result.poiList && result.poiList.pois.length > 0) {
+                                    const pois = result.poiList.pois;
+                                    console.log('Found', pois.length, 'results');
+
+                                    // Show search results
+                                    $searchResults.innerHTML = '';
+                                    $searchResults.style.display = 'block';
+
+                                    pois.forEach((poi, index) => {
+                                        const div = document.createElement('div');
+                                        div.style.padding = '8px';
+                                        div.style.cursor = 'pointer';
+                                        div.style.borderBottom = '1px solid #eee';
+                                        div.textContent = `${poi.name} - ${poi.address || ''}`;
+
+                                        div.addEventListener('click', () => {
+                                            const location = poi.location;
+                                            console.log('Selected POI:', poi.name, location.lng, location.lat);
+                                            map.setCenter([location.lng, location.lat]);
+                                            map.setZoom(15);
+                                            marker.setPosition([location.lng, location.lat]);
+                                            latitude = location.lat;
+                                            longitude = location.lng;
+                                            $searchResults.style.display = 'none';
+                                            $searchInput.value = poi.name;
+                                        });
+
+                                        $searchResults.appendChild(div);
                                     });
+                                } else {
+                                    console.warn('No results found or search failed');
+                                    alert(translations[currentLang].noResults);
+                                }
+                            });
+                        });
 
-                                    $searchResults.appendChild(div);
-                                });
-                            } else {
-                                alert('No results found');
+                        // Allow Enter key to trigger search
+                        $searchInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                console.log('Enter key pressed');
+                                $searchButton.click();
                             }
                         });
-                    });
-
-                    // Allow Enter key to trigger search
-                    $searchInput.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') {
-                            $searchButton.click();
-                        }
-                    });
+                    } catch (error) {
+                        console.error('Error creating map:', error);
+                        alert(translations[currentLang].mapCreateFailed + error.message);
+                    }
                 } else {
+                    console.log('Map already exists, updating center');
                     // Map already exists, just update center
                     map.setCenter([longitude, latitude]);
                     marker.setPosition([longitude, latitude]);
                 }
-            }, 300);
+            }, 500); // Increased timeout to 500ms
         });
 
         // Save location when closing map
