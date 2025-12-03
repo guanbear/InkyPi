@@ -1,4 +1,4 @@
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=92cd06d2544958bb607195395e62eeb9&plugin=AMap.PlaceSearch,AMap.AutoComplete"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=92cd06d2544958bb607195395e62eeb9&plugin=AMap.PlaceSearch"></script>
 
 <div class="form-group">
     <label for="language" class="form-label">
@@ -135,10 +135,11 @@
         <span class="close-button" onclick="closeModal('mapModal')">×</span>
         <h2 id="modalTitle">Select Location</h2>
         <div class="separator"></div>
-        <div class="form-group">
-            <input type="text" id="searchInput" placeholder="Search for a location..." class="form-input" style="width: 100%;" />
-            <div id="searchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; margin-top: 5px; display: none;"></div>
+        <div class="form-group" style="display: flex; gap: 10px;">
+            <input type="text" id="searchInput" placeholder="Search for a location..." class="form-input" style="flex: 1;" />
+            <button type="button" id="searchButton" class="action-button compact">Search</button>
         </div>
+        <div id="searchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; margin-top: 5px; display: none;"></div>
         <div id="map" style="width: 100%; height: 300px; margin: 10px 0px;"></div>
         <button id="closeMap" class="action-button">Save</button>
     </div>
@@ -311,7 +312,7 @@
         let latitude = +$latitude.value || 39.9042;
         let longitude = +$longitude.value || 116.4074;
 
-        let map, marker, autoComplete;
+        let map, marker;
 
         // Language change handler
         $language.addEventListener('change', (e) => {
@@ -329,8 +330,6 @@
                     $longitude.value = data.longitude;
                     latitude = data.latitude;
                     longitude = data.longitude;
-
-                    alert(`Location obtained: ${data.city || ''} ${data.province || ''}\nLat: ${data.latitude}, Lng: ${data.longitude}`);
                 } else {
                     alert('Failed to get location: ' + (data.error || 'Unknown error'));
                 }
@@ -369,15 +368,33 @@
         });
 
         // Initialize Amap when opening modal
-        $openMap.addEventListener('click', () => {
+        $openMap.addEventListener('click', async () => {
             openModal('mapModal');
+
+            // If no location set, try to get IP location first
+            if (!latitude || !longitude || (latitude === 39.9042 && longitude === 116.4074)) {
+                try {
+                    const response = await fetch('/api/amap/ip_location');
+                    const data = await response.json();
+                    if (data.success) {
+                        latitude = data.latitude;
+                        longitude = data.longitude;
+                        $latitude.value = latitude;
+                        $longitude.value = longitude;
+                    }
+                } catch (error) {
+                    console.error('Failed to get IP location:', error);
+                }
+            }
+
             setTimeout(() => {
                 if (!map) {
                     // Initialize Amap
                     map = new AMap.Map('map', {
-                        zoom: 10,
+                        zoom: 12,
                         center: [longitude, latitude],
-                        viewMode: '2D'
+                        viewMode: '2D',
+                        resizeEnable: true
                     });
 
                     // Add marker
@@ -402,30 +419,67 @@
                         longitude = lnglat.lng;
                     });
 
-                    // Initialize AutoComplete for search
-                    autoComplete = new AMap.AutoComplete({
-                        input: 'searchInput'
+                    // Initialize PlaceSearch for search button
+                    const placeSearch = new AMap.PlaceSearch({
+                        city: '全国',
+                        pageSize: 10
                     });
 
-                    // Handle search selection
-                    autoComplete.on('select', (e) => {
-                        const poi = e.poi;
-                        if (poi && poi.location) {
-                            const lng = poi.location.lng;
-                            const lat = poi.location.lat;
+                    // Search button handler
+                    const $searchButton = document.querySelector('#searchButton');
+                    $searchButton.addEventListener('click', () => {
+                        const keyword = $searchInput.value.trim();
+                        if (!keyword) {
+                            alert('Please enter a search keyword');
+                            return;
+                        }
 
-                            // Update map and marker
-                            map.setCenter([lng, lat]);
-                            marker.setPosition([lng, lat]);
-                            latitude = lat;
-                            longitude = lng;
+                        placeSearch.search(keyword, (status, result) => {
+                            if (status === 'complete' && result.poiList && result.poiList.pois.length > 0) {
+                                const pois = result.poiList.pois;
 
-                            // Hide search results
-                            $searchResults.style.display = 'none';
+                                // Show search results
+                                $searchResults.innerHTML = '';
+                                $searchResults.style.display = 'block';
+
+                                pois.forEach((poi, index) => {
+                                    const div = document.createElement('div');
+                                    div.style.padding = '8px';
+                                    div.style.cursor = 'pointer';
+                                    div.style.borderBottom = '1px solid #eee';
+                                    div.textContent = `${poi.name} - ${poi.address || ''}`;
+
+                                    div.addEventListener('click', () => {
+                                        const location = poi.location;
+                                        map.setCenter([location.lng, location.lat]);
+                                        map.setZoom(15);
+                                        marker.setPosition([location.lng, location.lat]);
+                                        latitude = location.lat;
+                                        longitude = location.lng;
+                                        $searchResults.style.display = 'none';
+                                        $searchInput.value = poi.name;
+                                    });
+
+                                    $searchResults.appendChild(div);
+                                });
+                            } else {
+                                alert('No results found');
+                            }
+                        });
+                    });
+
+                    // Allow Enter key to trigger search
+                    $searchInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            $searchButton.click();
                         }
                     });
+                } else {
+                    // Map already exists, just update center
+                    map.setCenter([longitude, latitude]);
+                    marker.setPosition([longitude, latitude]);
                 }
-            }, 100);
+            }, 300);
         });
 
         // Save location when closing map
