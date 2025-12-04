@@ -12,65 +12,16 @@
                 "name": "Default",
                 "start_time": "00:00",
                 "end_time": "24:00",
-                "plugins": [
-                    {
-                        "plugin_id": "qweather",
-                        "name": "weaher",
-                        "plugin_settings": {
-                            "language": "zh",
-                            "latitude": "39.9042",
-                            "longitude": "116.4074",
-                            "units": "metric",
-                            "themeMode": "auto",
-                            "displayStyle": "default",
-                            "customTitle": "",
-                            "mockAlertHeadline": "",
-                            "mockAlertSeverity": "",
-                            "displayRefreshTime": "true",
-                            "displayMetrics": "true",
-                            "displayGraph": "true",
-                            "displayRain": "true",
-                            "showAirQuality": "true",
-                            "temperatureBars": "true",
-                            "displayForecast": "true",
-                            "forecastDays": "7",
-                            "selectedFrame": "None",
-                            "topMargin": "",
-                            "bottomMargin": "",
-                            "leftMargin": "",
-                            "rightMargin": "",
-                            "backgroundOption": "color",
-                            "backgroundColor": "#ffffff",
-                            "textColor": "#000000"
-                        },
-                        "refresh": {
-                            "interval": 900
-                        },
-                        "latest_refresh_time": "2025-12-02T17:44:42.022948+08:00"
-                    }
-                ],
-                "current_plugin_index": 0
+                "plugins": [],
+                "current_plugin_index": null
             }
         ],
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2025-12-02T17:58:28.550871+08:00",
-        "image_hash": "205ad63043fc43d8f6b6a1741a093b7a7202bbe280bc1fc340fd30f179b79e79",
+        "refresh_time": "2025-12-04T14:18:57.996989+00:00",
+        "image_hash": "5e67647d1f318cd3baadbcf314738493c7771f21aa3633f9884d8bbc710fbbca",
         "refresh_type": "Manual Update",
         "plugin_id": "qweather"
-    },
-    "inverted_image": null,
-    "log_system_stats": null,
-    "timezone": "Asia/Shanghai",
-    "time_format": "24h",
-    "plugin_cycle_interval_seconds": 900,
-    "image_settings": {
-        "saturation": 1.0,
-        "brightness": 1.0,
-        "sharpness": 1.0,
-        "contrast": 1.0,
-        "e6_palette": "standard",
-        "e6_comparison": true
     }
 }

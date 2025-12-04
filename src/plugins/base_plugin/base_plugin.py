@@ -85,5 +85,14 @@ class BasePlugin:
         # load and render the given html template
         template = self.env.get_template(html_file)
         rendered_html = template.render(template_params)
+        
+        # Save rendered HTML for debugging
+        debug_dir = "/Users/guanzhicheng/Downloads/InkyPi/src/static/debug"
+        os.makedirs(debug_dir, exist_ok=True)
+        html_file = os.path.join(debug_dir, f"{self.get_plugin_id()}.html")
+        with open(html_file, 'w', encoding='utf-8') as f:
+            f.write(rendered_html)
+        logger.info(f"Saved debug HTML to: {html_file}")
+        logger.info(f"You can view this page in a browser at: http://localhost:8080/debug/{self.get_plugin_id()}.html")
 
         return take_screenshot_html(rendered_html, dimensions)
