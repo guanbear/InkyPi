@@ -1,15 +1,6 @@
 <html>
     <head>
     <meta name="viewport" content="width={{width}}, height={{height}}, initial-scale=1.0">
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: {{width}}px;
-            height: {{height}}px;
-            overflow: hidden;
-        }
-    </style>
     {% for style in style_sheets %}
         <link rel="stylesheet" href="{{style}}">
     {% endfor %}
