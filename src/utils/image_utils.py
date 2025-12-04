@@ -108,6 +108,9 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
 
+        width, height = dimensions
+        logger.info(f"Taking screenshot: target={target}, dimensions={dimensions}")
+
         chromium_path = os.getenv("CHROMIUM_PATH", "chromium-headless-shell")
 
         command = [
@@ -116,6 +119,8 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--headless",
             f"--screenshot={img_file_path}",
             f"--window-size={dimensions[0]},{dimensions[1]}",
+            f"--force-device-scale-factor=1",
+            "--virtual-time-budget=3000",
             "--disable-dev-shm-usage",
             "--disable-gpu",
             "--use-gl=swiftshader",
@@ -133,15 +138,24 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             command.append(f"--timeout={timeout_ms}")
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+        logger.info(f"Chrome command: {' '.join(command)}")
+        logger.info(f"Chrome returned: {result.returncode}")
+        if result.stderr:
+            logger.info(f"Chrome stderr: {result.stderr.decode('utf-8')[:500]}")
+
         # Check if the process failed or the output file is missing
         if result.returncode != 0 or not os.path.exists(img_file_path):
             logger.error("Failed to take screenshot:")
-            logger.error(result.stderr.decode('utf-8'))
+            logger.info(f"Chrome returned: {result.returncode}")
+            if result.stderr:
+                logger.error(f"Full Chrome stderr: {result.stderr.decode('utf-8')}")
             return None
 
         # Load the image using PIL
         with Image.open(img_file_path) as img:
             image = img.copy()
+            
+        logger.info(f"Screenshot successful: dimensions={[width, height]}, output size: {image.size}")
 
         # Remove image files
         os.remove(img_file_path)
