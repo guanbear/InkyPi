@@ -10,24 +10,24 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
   height: 100%;
   min-height: 480px;
   font-family: "Jost";
-  padding: 8px;
+  padding: 12px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .header {
   height: auto;
-  min-height: 60px;
+  min-height: 50px;
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
   container-type: size;
 }
 
@@ -176,12 +176,12 @@
 
 .header {
   height: auto;
-  min-height: 60px;
+  min-height: 50px;
   width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
   container-type: size;
 }
 
@@ -345,7 +345,7 @@
   display: grid;
   justify-content: space-evenly;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.5vh 1vw;
+  gap: 8px 12px;
   width: 50%;
 }
 
@@ -408,7 +408,7 @@
   justify-content: space-evenly;
   align-items: center;
   width: 100%;
-  gap: 1.5dvw;
+  gap: 12px;
   overflow: hidden;
 }
 
@@ -477,7 +477,8 @@
 
 .chart-container {
   width: 100%;
-  height: 16dvh;
+  height: 160px;
+  min-height: 120px;
 }
 
 .separator {
