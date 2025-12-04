@@ -9,6 +9,14 @@
       "Bash(grep:*)",
       "Bash(kill:*)",
       "Bash(./start.sh)",
+      "Bash(python3:*)",
+      "Bash(pip3 show:*)",
+      "Bash(find:*)",
+      "Bash(python3 -m pip list:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:shop.pimoroni.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(echo:*)",
       "Bash(python3:*)"
     ],
     "deny": []
