@@ -192,16 +192,17 @@ class EPD:
         else:
             logger.warning("Invalid image dimensions: %d x %d, expected %d x %d" % (imwidth, imheight, self.width, self.height))
 
-        # Convert the soruce image to the 7 colors, dithering if needed
-        image_7color = image_temp.convert("RGB").quantize(palette=pal_image)
-        buf_7color = bytearray(image_7color.tobytes('raw'))
+        # Convert the soruce image to the 6 colors (no dithering - already done in image_utils)
+        from PIL import Image
+        image_6color = image_temp.convert("RGB").quantize(palette=pal_image)
+        buf_6color = bytearray(image_6color.tobytes('raw'))
 
         # PIL does not support 4 bit color, so pack the 4 bits of color
         # into a single byte to transfer to the panel
         buf = [0x00] * int(self.width * self.height / 2)
         idx = 0
-        for i in range(0, len(buf_7color), 2):
-            buf[idx] = (buf_7color[i] << 4) + buf_7color[i+1]
+        for i in range(0, len(buf_6color), 2):
+            buf[idx] = (buf_6color[i] << 4) + buf_6color[i+1]
             idx += 1
             
         return buf
