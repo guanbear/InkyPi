@@ -166,6 +166,10 @@ cython_debug/
 # Development artifacts
 mock_display_output/
 
+# Dynamic generated content
+/src/static/images/current_image.png
+/config/device*.json
+
 # IDE files
 .idea
 
