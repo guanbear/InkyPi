@@ -1,0 +1,82 @@
+{
+    "name": "InkyPi Development",
+    "display_type": "mock",
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [
+                    {
+                        "plugin_id": "qweather",
+                        "name": "weaher",
+                        "plugin_settings": {
+                            "language": "zh",
+                            "latitude": "39.9042",
+                            "longitude": "116.4074",
+                            "units": "metric",
+                            "themeMode": "auto",
+                            "displayStyle": "default",
+                            "customTitle": "",
+                            "mockAlertHeadline": "",
+                            "mockAlertSeverity": "",
+                            "displayRefreshTime": "true",
+                            "displayMetrics": "true",
+                            "displayGraph": "true",
+                            "displayRain": "true",
+                            "showAirQuality": "true",
+                            "temperatureBars": "true",
+                            "displayForecast": "true",
+                            "forecastDays": "7",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2025-12-05T17:20:30.776281+08:00"
+                    }
+                ],
+                "current_plugin_index": 0
+            }
+        ],
+        "active_playlist": "Default"
+    },
+    "refresh_info": {
+        "refresh_time": "2025-12-05T17:20:30.776281+08:00",
+        "image_hash": "0f9df2fb53b960fa91e9d7b21c34046cf3bf4912f7bf65667e347d7240ed52c7",
+        "refresh_type": "Playlist",
+        "plugin_id": "qweather",
+        "playlist": "Default",
+        "plugin_instance": "weaher"
+    },
+    "inverted_image": null,
+    "log_system_stats": null,
+    "timezone": "Asia/Shanghai",
+    "time_format": "24h",
+    "plugin_cycle_interval_seconds": 900,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0,
+        "e6_palette": "standard",
+        "e6_comparison": true
+    },
+    "default_location": {
+        "latitude": 39.919599,
+        "longitude": 116.208816
+    }
+}

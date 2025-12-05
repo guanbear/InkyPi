@@ -1,8 +1,12 @@
 {
     "name": "InkyPi Debug - Hainan",
-    "display_type": "mock",
+    "display_type": "epd7in3e",
     "resolution": [800, 480],
     "orientation": "horizontal",
     "timezone": "Asia/Shanghai",
-    "time_format": "24h"
+    "time_format": "24h",
+    "image_settings": {
+        "e6_palette": "standard",
+        "e6_comparison": false
+    }
 }
