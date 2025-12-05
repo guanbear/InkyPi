@@ -1,4 +1,9 @@
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=92cd06d2544958bb607195395e62eeb9&plugin=AMap.PlaceSearch"></script>
+<script src="https://webapi.amap.com/loader.js"></script>
+<script>
+    window._AMapSecurityConfig = {
+        securityJsCode: "db3a5bac89e5ee7b8762c3de25325891"
+    };
+</script>
 
 <div class="form-group">
     <label for="language" class="form-label">
@@ -21,9 +26,9 @@
         <input readonly type="text" id="longitude" name="longitude" class="form-input" />
     </div>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button type="button" id="getLocationByIP" class="action-button compact">📍 Get Location by IP</button>
-        <button type="button" id="openMap" class="action-button compact">🗺️ Select on Map</button>
-        <button type="button" id="setDefault" class="action-button compact">⭐ Set as Default</button>
+        <button type="button" id="getLocationByIP" class="action-button compact">📍 获取位置</button>
+        <button type="button" id="openMap" class="action-button compact">🗺 地图选点</button>
+        <button type="button" id="setDefault" class="action-button compact">⭐ 设为默认</button>
     </div>
 </div>
 
@@ -155,7 +160,7 @@
             longitudeLabel: 'Longitude',
             selectLocation: 'Select Location',
             getLocationByIP: '📍 Get Location by IP',
-            selectOnMap: '🗺️ Select on Map',
+            selectOnMap: '🗺 Select on Map',
             setAsDefault: '⭐ Set as Default',
             searchPlaceholder: 'Search for a location...',
             searchButton: 'Search',
@@ -203,7 +208,7 @@
             longitudeLabel: '经度',
             selectLocation: '选择位置',
             getLocationByIP: '📍 通过IP获取位置',
-            selectOnMap: '�图 在地图上选择',
+            selectOnMap: '🗺 在地图上选择',
             setAsDefault: '⭐ 设为默认',
             searchPlaceholder: '搜索地点...',
             searchButton: '搜索',
@@ -245,8 +250,11 @@
             mapCreateFailed: '创建地图失败：'
         }
     };
+    let currentLang = 'zh'; // Default language
 
     function updateLanguage(lang) {
+        console.log('Updating language to:', lang);
+        currentLang = lang;
         const t = translations[lang];
         document.getElementById('languageLabel').textContent = t.languageLabel;
         document.getElementById('locationLabel').textContent = t.locationLabel;
@@ -299,6 +307,7 @@
         severityOptions[1].textContent = t.severityMinor;
         severityOptions[2].textContent = t.severityModerate;
         severityOptions[3].textContent = t.severitySevere;
+        document.getElementById('searchResults').style.display = 'none';
         severityOptions[4].textContent = t.severityExtreme;
     }
 
@@ -321,6 +330,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing...');
+
         const $latitude = document.querySelector('#latitude');
         const $longitude = document.querySelector('#longitude');
         const $openMap = document.querySelector('#openMap');
@@ -331,31 +342,58 @@
         const $searchInput = document.querySelector('#searchInput');
         const $searchResults = document.querySelector('#searchResults');
 
+        console.log('Button elements found:', {
+            getLocationByIP: !!$getLocationByIP,
+            openMap: !!$openMap,
+            setDefault: !!$setDefault
+        });
+
         let latitude = +$latitude.value || 39.9042;
         let longitude = +$longitude.value || 116.4074;
 
         let map, marker;
-        let currentLang = 'zh'; // Default language
 
         // Language change handler
         $language.addEventListener('change', (e) => {
-            currentLang = e.target.value;
-            updateLanguage(currentLang);
+            console.log('Language changed to:', e.target.value);
+            updateLanguage(e.target.value);
         });
 
         // Get location by IP button
-        $getLocationByIP.addEventListener('click', async () => {
+        $getLocationByIP.addEventListener('click', async (e) => {
+            console.log('Get Location by IP button clicked');
+            e.preventDefault();
             try {
-                const response = await fetch('/api/amap/ip_location');
-                const data = await response.json();
+                // Use browser's geolocation API instead of problematic backend
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const latitude = position.coords.latitude.toFixed(6);
+                            const longitude = position.coords.longitude.toFixed(6);
 
-                if (data.success) {
-                    $latitude.value = data.latitude;
-                    $longitude.value = data.longitude;
-                    latitude = data.latitude;
-                    longitude = data.longitude;
+                            $latitude.value = latitude;
+                            $longitude.value = longitude;
+                            window.latitude = parseFloat(latitude);
+                            window.longitude = parseFloat(longitude);
+
+                            console.log('Browser geolocation obtained:', latitude, longitude);
+                        },
+                        (error) => {
+                            console.error('Browser geolocation failed:', error);
+                            // Fallback to Beijing coordinates
+                            $latitude.value = '39.9042';
+                            $longitude.value = '116.4074';
+                            window.latitude = 39.9042;
+                            window.longitude = 116.4074;
+                            console.log('Using fallback Beijing coordinates');
+                        },
+                        {
+                            timeout: 10000,
+                            enableHighAccuracy: true
+                        }
+                    );
                 } else {
-                    alert('Failed to get location: ' + (data.error || 'Unknown error'));
+                    alert('您的浏览器不支持地理定位');
                 }
             } catch (error) {
                 alert('Error getting location: ' + error.message);
@@ -392,9 +430,12 @@
         });
 
         // Initialize Amap when opening modal
-        $openMap.addEventListener('click', async () => {
-            console.log('Opening map modal...');
+        $openMap.addEventListener('click', async (e) => {
+            console.log('Open Map button clicked');
+            e.preventDefault();
+
             openModal('mapModal');
+            console.log('Map modal opened');
 
             // If no location set, try to get IP location first
             if (!latitude || !longitude || (latitude === 39.9042 && longitude === 116.4074)) {
@@ -423,21 +464,21 @@
                 if (!map) {
                     console.log('Creating new map instance...');
 
-                    // Check if AMap is loaded
-                    if (typeof AMap === 'undefined') {
-                        console.error('AMap library not loaded!');
-                        alert(translations[currentLang].mapLoadFailed);
-                        return;
-                    }
+                    // Use the recommended loader method for Amap v2.0
+                    window.AMapLoader.load({
+                        key: "a078ea3361d5723a35260516e178ac0b",
+                            version: "2.0",
+                            plugins: ["AMap.PlaceSearch"]
+                        }).then(AMap => {
+                            console.log('AMap loaded successfully');
 
-                    try {
-                        // Initialize Amap
-                        map = new AMap.Map('map', {
-                            zoom: 12,
-                            center: [longitude, latitude],
-                            viewMode: '2D',
-                            resizeEnable: true
-                        });
+                            // Initialize Amap
+                            map = new AMap.Map('map', {
+                                zoom: 12,
+                                center: [longitude, latitude],
+                                viewMode: '2D',
+                                resizeEnable: true
+                            });
 
                         console.log('Map created successfully');
 
@@ -531,10 +572,10 @@
                                 $searchButton.click();
                             }
                         });
-                    } catch (error) {
-                        console.error('Error creating map:', error);
-                        alert(translations[currentLang].mapCreateFailed + error.message);
-                    }
+                    }).catch(error => {
+                        console.error('Error loading Amap:', error);
+                        alert(translations[currentLang].mapLoadFailed + ': ' + error.message);
+                    });
                 } else {
                     console.log('Map already exists, updating center');
                     // Map already exists, just update center
@@ -552,83 +593,91 @@
         });
 
         // Load settings
-        if (loadPluginSettings) {
-            document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
-            document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
-            document.getElementById('units').value = pluginSettings.units || 'metric';
-            document.getElementById('language').value = pluginSettings.language || 'zh';
-            document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
-            document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
+        console.log('Loading plugin settings...');
+        try {
+            if ( typeof loadPluginSettings !== 'undefined' && loadPluginSettings) {
+                document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
+                document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
+                document.getElementById('units').value = pluginSettings.units || 'metric';
+                document.getElementById('language').value = pluginSettings.language || 'zh';
+                document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
+                document.getElementById('displayStyle').value = pluginSettings.displayStyle || 'default';
 
-            document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === 'true' || pluginSettings.displayRefreshTime === true;
-            document.getElementById('displayRefreshTime').value = (pluginSettings.displayRefreshTime !== undefined && pluginSettings.displayRefreshTime !== null) ? pluginSettings.displayRefreshTime : 'true';
+                document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === 'true' || pluginSettings.displayRefreshTime === true;
+                document.getElementById('displayRefreshTime').value = (pluginSettings.displayRefreshTime !== undefined && pluginSettings.displayRefreshTime !== null) ? pluginSettings.displayRefreshTime : 'true';
 
-            document.getElementById('displayMetrics').checked = pluginSettings.displayMetrics === 'true' || pluginSettings.displayMetrics === true;
-            document.getElementById('displayMetrics').value = (pluginSettings.displayMetrics !== undefined && pluginSettings.displayMetrics !== null) ? pluginSettings.displayMetrics : 'true';
+                document.getElementById('displayMetrics').checked = pluginSettings.displayMetrics === 'true' || pluginSettings.displayMetrics === true;
+                document.getElementById('displayMetrics').value = (pluginSettings.displayMetrics !== undefined && pluginSettings.displayMetrics !== null) ? pluginSettings.displayMetrics : 'true';
 
-            document.getElementById('displayGraph').checked = pluginSettings.displayGraph === 'true' || pluginSettings.displayGraph === true;
-            document.getElementById('displayGraph').value = (pluginSettings.displayGraph !== undefined && pluginSettings.displayGraph !== null) ? pluginSettings.displayGraph : 'true';
+                document.getElementById('displayGraph').checked = pluginSettings.displayGraph === 'true' || pluginSettings.displayGraph === true;
+                document.getElementById('displayGraph').value = (pluginSettings.displayGraph !== undefined && pluginSettings.displayGraph !== null) ? pluginSettings.displayGraph : 'true';
 
-            document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
-            document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
+                document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
+                document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
 
-            document.getElementById('mergeMinutelyData').checked = pluginSettings.mergeMinutelyData === 'true' || pluginSettings.mergeMinutelyData === true;
-            document.getElementById('mergeMinutelyData').value = (pluginSettings.mergeMinutelyData !== undefined && pluginSettings.mergeMinutelyData !== null) ? pluginSettings.mergeMinutelyData : 'false';
+                document.getElementById('mergeMinutelyData').checked = pluginSettings.mergeMinutelyData === 'true' || pluginSettings.mergeMinutelyData === true;
+                document.getElementById('mergeMinutelyData').value = (pluginSettings.mergeMinutelyData !== undefined && pluginSettings.mergeMinutelyData !== null) ? pluginSettings.mergeMinutelyData : 'false';
 
-            document.getElementById('displayForecast').checked = pluginSettings.displayForecast === 'true' || pluginSettings.displayForecast === true;
-            document.getElementById('displayForecast').value = (pluginSettings.displayForecast !== undefined && pluginSettings.displayForecast !== null) ? pluginSettings.displayForecast : 'true';
+                document.getElementById('displayForecast').checked = pluginSettings.displayForecast === 'true' || pluginSettings.displayForecast === true;
+                document.getElementById('displayForecast').value = (pluginSettings.displayForecast !== undefined && pluginSettings.displayForecast !== null) ? pluginSettings.displayForecast : 'true';
 
-            document.getElementById('forecastDays').value = pluginSettings.forecastDays || 7;
+                document.getElementById('forecastDays').value = pluginSettings.forecastDays || 7;
 
-            document.getElementById('moonPhase').checked = pluginSettings.moonPhase === 'true' || pluginSettings.moonPhase === true;
-            document.getElementById('moonPhase').value = (pluginSettings.moonPhase !== undefined && pluginSettings.moonPhase !== null) ? pluginSettings.moonPhase : 'false';
+                document.getElementById('moonPhase').checked = pluginSettings.moonPhase === 'true' || pluginSettings.moonPhase === true;
+                document.getElementById('moonPhase').value = (pluginSettings.moonPhase !== undefined && pluginSettings.moonPhase !== null) ? pluginSettings.moonPhase : 'false';
 
-            document.getElementById('showAirQuality').checked = pluginSettings.showAirQuality === 'true' || pluginSettings.showAirQuality === true;
-            document.getElementById('showAirQuality').value = (pluginSettings.showAirQuality !== undefined && pluginSettings.showAirQuality !== null) ? pluginSettings.showAirQuality : 'false';
+                document.getElementById('showAirQuality').checked = pluginSettings.showAirQuality === 'true' || pluginSettings.showAirQuality === true;
+                document.getElementById('showAirQuality').value = (pluginSettings.showAirQuality !== undefined && pluginSettings.showAirQuality !== null) ? pluginSettings.showAirQuality : 'false';
 
-            document.getElementById('temperatureBars').checked = pluginSettings.temperatureBars === 'true' || pluginSettings.temperatureBars === true;
-            document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'true';
+                document.getElementById('temperatureBars').checked = pluginSettings.temperatureBars === 'true' || pluginSettings.temperatureBars === true;
+                document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'true';
 
-            document.getElementById('customTitle').value = pluginSettings.customTitle || '';
+                document.getElementById('customTitle').value = pluginSettings.customTitle || '';
 
-            document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
-            document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
+                document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
+                document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
 
-            // Update language UI
-            updateLanguage(pluginSettings.language || 'en');
-        } else {
-            document.getElementById('latitude').value = '39.9042';
-            document.getElementById('longitude').value = '116.4074';
-            document.getElementById('units').value = "metric";
-            document.getElementById('language').value = "zh";
-            document.getElementById('themeMode').value = "auto";
-            document.getElementById('displayStyle').value = "default";
-            document.getElementById('displayRefreshTime').checked = true;
-            document.getElementById('displayRefreshTime').value = "true";
-            document.getElementById('displayMetrics').checked = true;
-            document.getElementById('displayMetrics').value = "true";
-            document.getElementById('displayGraph').checked = true;
-            document.getElementById('displayGraph').value = "true";
-            document.getElementById('displayRain').checked = true;
-            document.getElementById('displayRain').value = "true";
-            document.getElementById('mergeMinutelyData').checked = false;
-            document.getElementById('mergeMinutelyData').value = "false";
-            document.getElementById('displayForecast').checked = true;
-            document.getElementById('displayForecast').value = "true";
-            document.getElementById('forecastDays').value = 7;
-            document.getElementById('moonPhase').checked = false;
-            document.getElementById('moonPhase').value = "false";
-            document.getElementById('showAirQuality').checked = true;
-            document.getElementById('showAirQuality').value = "true";
-            document.getElementById('temperatureBars').checked = true;
-            document.getElementById('temperatureBars').value = "true";
-            document.getElementById('customTitle').value = '';
+                // Update language UI - default to Chinese if no saved setting
+                const savedLang = pluginSettings.language || 'zh';
+                document.getElementById('language').value = savedLang;
+                updateLanguage(savedLang);
+            } else {
+                // Default settings for development mode
+                document.getElementById('latitude').value = '39.9042';
+                document.getElementById('longitude').value = '116.4074';
+                document.getElementById('units').value = "metric";
+                document.getElementById('language').value = "zh";
+                document.getElementById('themeMode').value = "auto";
+                document.getElementById('displayStyle').value = "default";
+                document.getElementById('displayRefreshTime').checked = true;
+                document.getElementById('displayRefreshTime').value = "true";
+                document.getElementById('displayMetrics').checked = true;
+                document.getElementById('displayMetrics').value = "true";
+                document.getElementById('displayGraph').checked = true;
+                document.getElementById('displayGraph').value = "true";
+                document.getElementById('displayRain').checked = true;
+                document.getElementById('displayRain').value = "true";
+                document.getElementById('mergeMinutelyData').checked = false;
+                document.getElementById('mergeMinutelyData').value = "false";
+                document.getElementById('displayForecast').checked = true;
+                document.getElementById('displayForecast').value = "true";
+                document.getElementById('forecastDays').value = 7;
+                document.getElementById('moonPhase').checked = false;
+                document.getElementById('moonPhase').value = "false";
+                document.getElementById('showAirQuality').checked = true;
+                document.getElementById('showAirQuality').value = "true";
+                document.getElementById('temperatureBars').checked = true;
+                document.getElementById('temperatureBars').value = "true";
+                document.getElementById('customTitle').value = '';
 
-            document.getElementById('mockAlertHeadline').value = '';
-            document.getElementById('mockAlertSeverity').value = '';
+                document.getElementById('mockAlertHeadline').value = '';
+                document.getElementById('mockAlertSeverity').value = '';
 
-            // Initialize with Chinese
-            updateLanguage('zh');
+                // Initialize with Chinese
+                updateLanguage('zh');
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
         }
     });
 </script>

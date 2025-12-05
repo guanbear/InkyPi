@@ -10,7 +10,11 @@
       "Bash(kill:*)",
       "Bash(./start.sh)",
       "Bash(python3:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "WebFetch(domain:lbs.amap.com)",
+      "Bash(sed:*)",
+      "Bash(/Users/guan/inkypi_env/venv/bin/python:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

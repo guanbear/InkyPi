@@ -46,7 +46,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2025-12-02T17:44:42.022948+08:00"
+                        "latest_refresh_time": "2025-12-05T15:05:00.250253+08:00"
                     }
                 ],
                 "current_plugin_index": 0
@@ -55,10 +55,12 @@
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2025-12-02T17:58:28.550871+08:00",
-        "image_hash": "205ad63043fc43d8f6b6a1741a093b7a7202bbe280bc1fc340fd30f179b79e79",
-        "refresh_type": "Manual Update",
-        "plugin_id": "qweather"
+        "refresh_time": "2025-12-05T15:05:00.250253+08:00",
+        "image_hash": "7a2624f9dc0d33cdcf059a0e2bd65d6cd60bbd8cf4692a4fbebe57825be46bce",
+        "refresh_type": "Playlist",
+        "plugin_id": "qweather",
+        "playlist": "Default",
+        "plugin_instance": "weaher"
     },
     "inverted_image": null,
     "log_system_stats": null,
@@ -72,5 +74,9 @@
         "contrast": 1.0,
         "e6_palette": "standard",
         "e6_comparison": true
+    },
+    "default_location": {
+        "latitude": 39.919599,
+        "longitude": 116.208816
     }
 }
