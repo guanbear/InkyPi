@@ -5,6 +5,7 @@ import os
 import pytz
 import logging
 import io
+import requests
 
 # Try to import cysystemd for journal reading (Linux only)
 try:
@@ -143,4 +144,108 @@ def download_logs():
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return Response(f"Error reading logs: {e}", status=500, mimetype="text/plain")
+
+@settings_bp.route('/api/amap/ip_location', methods=['GET'])
+def get_ip_location():
+    """Get geolocation based on client IP address using Amap API."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    amap_key = device_config.load_env_key("AMAP_API_KEY")
+
+    if not amap_key:
+        return jsonify({"error": "Amap API key not configured"}), 500
+
+    try:
+        # Amap IP location API
+        # https://restapi.amap.com/v3/ip?key=YOUR_KEY&ip=CLIENT_IP
+        url = "https://restapi.amap.com/v3/ip"
+        params = {
+            "key": amap_key,
+            "output": "json"
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if response.status_code != 200:
+            logger.error(f"Amap API request failed: {response.status_code}")
+            return jsonify({"error": "Failed to get location from Amap"}), 500
+
+        data = response.json()
+
+        if data.get('status') != '1':
+            logger.error(f"Amap API returned error: {data.get('info')}")
+            return jsonify({"error": data.get('info', 'Unknown error')}), 500
+
+        # Amap returns location as "longitude,latitude" string
+        location = data.get('rectangle', '')
+        if not location:
+            return jsonify({"error": "No location data returned"}), 500
+
+        # Parse location - rectangle format is "lng1,lat1;lng2,lat2"
+        # We'll use the center point
+        coords = location.split(';')
+        if len(coords) == 2:
+            lng1, lat1 = coords[0].split(',')
+            lng2, lat2 = coords[1].split(',')
+            longitude = (float(lng1) + float(lng2)) / 2
+            latitude = (float(lat1) + float(lat2)) / 2
+        else:
+            return jsonify({"error": "Invalid location format"}), 500
+
+        city = data.get('city', '')
+        province = data.get('province', '')
+
+        return jsonify({
+            "success": True,
+            "latitude": round(latitude, 6),
+            "longitude": round(longitude, 6),
+            "city": city,
+            "province": province,
+            "adcode": data.get('adcode', '')
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting IP location: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@settings_bp.route('/api/amap/save_default_location', methods=['POST'])
+def save_default_location():
+    """Save latitude and longitude as default values in device config."""
+    device_config = current_app.config['DEVICE_CONFIG']
+
+    try:
+        data = request.get_json()
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+
+        if latitude is None or longitude is None:
+            return jsonify({"error": "Latitude and longitude are required"}), 400
+
+        # Validate coordinates
+        try:
+            lat = float(latitude)
+            lng = float(longitude)
+            if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+                return jsonify({"error": "Invalid coordinates"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid coordinate format"}), 400
+
+        # Store in device config as default_location
+        device_config.update_config({
+            "default_location": {
+                "latitude": lat,
+                "longitude": lng
+            }
+        })
+
+        return jsonify({
+            "success": True,
+            "message": "Default location saved successfully",
+            "latitude": lat,
+            "longitude": lng
+        })
+
+    except Exception as e:
+        logger.error(f"Error saving default location: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
