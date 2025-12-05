@@ -46,7 +46,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2025-12-05T15:05:00.250253+08:00"
+                        "latest_refresh_time": "2025-12-05T17:05:27.366877+08:00"
                     }
                 ],
                 "current_plugin_index": 0
@@ -55,8 +55,8 @@
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2025-12-05T15:05:00.250253+08:00",
-        "image_hash": "7a2624f9dc0d33cdcf059a0e2bd65d6cd60bbd8cf4692a4fbebe57825be46bce",
+        "refresh_time": "2025-12-05T17:05:27.366877+08:00",
+        "image_hash": "20b44b47a334ea35563b3c085104d067e75c262aab44e81eb37d8a24e48cb7aa",
         "refresh_type": "Playlist",
         "plugin_id": "qweather",
         "playlist": "Default",
