@@ -193,7 +193,6 @@ class EPD:
             logger.warning("Invalid image dimensions: %d x %d, expected %d x %d" % (imwidth, imheight, self.width, self.height))
 
         # Convert the soruce image to the 6 colors (no dithering - already done in image_utils)
-        from PIL import Image
         image_6color = image_temp.convert("RGB").quantize(palette=pal_image)
         buf_6color = bytearray(image_6color.tobytes('raw'))
 
