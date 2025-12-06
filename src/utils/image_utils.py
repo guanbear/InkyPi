@@ -336,17 +336,17 @@ def _apply_official_quantization(image, e6_palette):
 
 def _create_comparison_image(image, display_type):
     """
-    Create side-by-side comparison of E6 optimization vs original.
-    Left: original (no e6 optimization), Right: standard E6 palette
+    Create side-by-side comparison of Floyd-Steinberg vs Ordered dithering.
+    Left: Floyd-Steinberg dithering, Right: Ordered dithering
 
     Args:
         image (PIL.Image): Source image (should already have enhancements applied)
         display_type (str): Display model identifier
 
     Returns:
-        PIL.Image: Split image comparing original vs E6 optimized
+        PIL.Image: Split image comparing Floyd-Steinberg vs Ordered dithering
     """
-    logger.info("Creating E6 comparison image (left: original no optimization, right: standard E6 palette)")
+    logger.info("Creating dithering comparison image (left: Floyd-Steinberg, right: Ordered)")
 
     width, height = image.size
     half_width = width // 2
@@ -354,15 +354,22 @@ def _create_comparison_image(image, display_type):
     left_part = image.crop((0, 0, half_width, height))
     right_part = image.crop((half_width, 0, width, height))
 
-    # Right part: Apply standard E6 palette
-    standard_palette = get_e6_palette('standard')
-    standard_pal_image = Image.new('P', (1, 1))
-    standard_pal_image.putpalette(standard_palette + [0] * (768 - len(standard_palette)))
+    # Get palette type for comparison
+    palette_type = 'standard'  # Default palette for comparison
+    e6_palette = get_e6_palette(palette_type)
+    
+    # Left: Floyd-Steinberg dithering
+    floyd_palette = Image.new('P', (1, 1))
+    floyd_palette.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+    optimized_left = left_part.quantize(palette=floyd_palette, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
 
-    optimized_right = right_part.quantize(palette=standard_pal_image, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
+    # Right: Ordered dithering
+    ordered_palette = Image.new('P', (1, 1))
+    ordered_palette.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+    optimized_right = right_part.quantize(palette=ordered_palette, dither=Image.Dither.ORDERED).convert('RGB')
 
     result = Image.new('RGB', (width, height))
-    result.paste(left_part, (0, 0))
+    result.paste(optimized_left, (0, 0))
     result.paste(optimized_right, (half_width, 0))
 
     return result
