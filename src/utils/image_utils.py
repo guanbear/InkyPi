@@ -182,7 +182,7 @@ def get_e6_palette(palette_type='standard'):
         palette_type (str): 'standard' (pure RGB colors), 'tuned' (Waveshare C++ tool adjusted colors), or 'original' (InkyPi original - no optimization)
 
     Returns:
-        list: RGB color values for 6 colors, or None for original (no palette optimization)
+        list: RGB color values for 6 colors, or extended palette for official compatibility
     """
     if palette_type == 'original':
         return None
@@ -203,6 +203,24 @@ def get_e6_palette(palette_type='standard'):
             191, 0, 0,      # Red     - RGB(191, 0, 0) - Darker red for better contrast
             100, 64, 255,   # Blue    - RGB(100, 64, 255) - Purple-blue for e-ink
             67, 138, 28     # Green   - RGB(67, 138, 28) - Darker green
+        ],
+        'standard_official': [
+            0, 0, 0,        # Black   - RGB(0, 0, 0)
+            255, 255, 255,  # White   - RGB(255, 255, 255)
+            255, 255, 0,    # Yellow  - RGB(255, 255, 0) - Pure yellow
+            255, 0, 0,      # Red     - RGB(255, 0, 0) - Pure red
+            0, 0, 0,        # Index 4 - Skip position (orange placeholder, unused for E6)
+            0, 0, 255,      # Blue    - RGB(0, 0, 255) - Pure blue (now at index 5)
+            0, 255, 0       # Green   - RGB(0, 255, 0) - Pure green (now at index 6)
+        ],
+        'tuned_official': [
+            0, 0, 0,        # Black   - RGB(0, 0, 0)
+            255, 255, 255,  # White   - RGB(255, 255, 255)
+            255, 243, 56,   # Yellow  - RGB(255, 243, 56) - Adjusted for e-ink
+            191, 0, 0,      # Red     - RGB(191, 0, 0) - Darker red for better contrast
+            0, 0, 0,        # Index 4 - Skip position (orange placeholder, unused for E6)
+            100, 64, 255,   # Blue    - RGB(100, 64, 255) - Purple-blue for e-ink (now at index 5)
+            67, 138, 28     # Green   - RGB(67, 138, 28) - Darker green (now at index 6)
         ]
     }
     return palettes.get(palette_type, palettes['standard'])
@@ -238,12 +256,70 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
 
     e6_palette = get_e6_palette(palette_type)
 
-    palette_image = Image.new('P', (1, 1))
-    palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+    # Check if we should use official euclidean distance algorithm
+    use_official_algorithm = palette_type.endswith('_official')
+    if use_official_algorithm:
+        # Remove '_official' suffix for palette lookup
+        actual_palette_type = palette_type.replace('_official', '')
+        e6_palette = get_e6_palette(actual_palette_type)
+        logger.info(f"Using official euclidean distance algorithm with {actual_palette_type} palette")
+        return _apply_official_quantization(image, e6_palette)
+    else:
+        # Use PIL quantization
+        palette_image = Image.new('P', (1, 1))
+        palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+        optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+        # Return indexed image (P mode) instead of RGB to preserve quantization
+        return optimized
 
-    optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
-
-    return optimized.convert('RGB')
+def _apply_official_quantization(image, e6_palette):
+    """
+    Apply official Waveshare euclidean distance quantization algorithm.
+    Replicated from converterTo6color.cpp for authentic color mapping.
+    """
+    logger.info("Applying official euclidean distance quantization")
+    
+    width, height = image.size
+    result_image = Image.new('P', (width, height))
+    
+    # Convert flat palette to RGB tuples for easier access
+    palette_colors = [(e6_palette[i], e6_palette[i+1], e6_palette[i+2]) 
+                    for i in range(0, len(e6_palette), 3)]
+    
+    result_pixels = []
+    
+    for y in range(height):
+        for x in range(width):
+            pixel = image.getpixel((x, y))
+            
+            # Find closest color using euclidean distance (official algorithm)
+            min_dist = 100000000
+            best_idx = 0
+            
+            for color_idx, color in enumerate(palette_colors):
+                # Calculate euclidean distance in RGB space
+                diff_r = pixel[0] - color[0]
+                diff_g = pixel[1] - color[1] 
+                diff_b = pixel[2] - color[2]
+                distance = (diff_r * diff_r) + (diff_g * diff_g) + (diff_b * diff_b)
+                
+                if distance < min_dist:
+                    min_dist = distance
+                    best_idx = color_idx
+            
+            # Apply official index correction for 6-color displays
+            # Skip index 4 for hardware compatibility (matches converterTo6color.cpp)
+            if best_idx > 3:
+                best_idx = best_idx + 1
+            
+            result_pixels.append(best_idx)
+    
+    # Convert back to image with quantized palette
+    result_image.putdata(result_pixels)
+    result_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+    
+    # Return indexed image (P mode) instead of RGB to preserve quantization
+    return result_image
 
 def _create_comparison_image(image, display_type):
     """
