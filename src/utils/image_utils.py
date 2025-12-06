@@ -189,12 +189,13 @@ def get_e6_palette(palette_type='standard'):
 
     palettes = {
         'standard': [
-            0, 0, 0,        # Black   - RGB(0, 0, 0)
-            255, 255, 255,  # White   - RGB(255, 255, 255)
-            255, 255, 0,    # Yellow  - RGB(255, 255, 0) - Pure yellow
-            255, 0, 0,      # Red     - RGB(255, 0, 0) - Pure red
-            0, 0, 255,      # Blue    - RGB(0, 0, 255) - Pure blue
-            0, 255, 0       # Green   - RGB(0, 255, 0) - Pure green
+            0, 0, 0,        # Black   - RGB(0, 0, 0)           - Index 0
+            255, 255, 255,  # White   - RGB(255, 255, 255)   - Index 1
+            255, 255, 0,    # Yellow  - RGB(255, 255, 0)     - Index 2
+            255, 0, 0,      # Red     - RGB(255, 0, 0)       - Index 3
+            0, 0, 0,        # Index 4 - Skip position (placeholder)
+            0, 0, 255,      # Blue    - RGB(0, 0, 255)       - Index 5
+            0, 255, 0       # Green   - RGB(0, 255, 0)      - Index 6
         ],
         'tuned': [
             0, 0, 0,        # Black   - RGB(0, 0, 0)
