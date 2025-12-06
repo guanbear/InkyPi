@@ -292,6 +292,7 @@ def _apply_official_quantization(image, e6_palette):
     """
     Apply official Waveshare euclidean distance quantization algorithm.
     Replicated from converterTo6color.cpp for authentic color mapping.
+    Note: Index jumping removed as our palette already matches hardware expectations.
     """
     logger.info("Applying official euclidean distance quantization")
     
@@ -323,10 +324,8 @@ def _apply_official_quantization(image, e6_palette):
                     min_dist = distance
                     best_idx = color_idx
             
-            # Apply official index correction for 6-color displays
-            # Skip index 4 for hardware compatibility (matches converterTo6color.cpp)
-            if best_idx > 3:
-                best_idx = best_idx + 1
+            # No index jumping - our palette already matches hardware expectations
+            # Index 4 is already the skip position in our palette
             
             result_pixels.append(best_idx)
     
