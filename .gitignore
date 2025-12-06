@@ -178,6 +178,8 @@ mock_display_output/
 /src/static/styles/
 
 # Waveshare display drivers - should be installed officially
-src/display/waveshare_epd/epd*.py
+# Allow our modified epd7in3e.py but ignore others
+src/display/waveshare_epd/epd7in3*
+!src/display/waveshare_epd/epd7in3e.py
 !src/display/waveshare_epd/__init__.py
 !src/display/waveshare_epd/epdconfig.py
