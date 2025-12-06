@@ -265,10 +265,23 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
         logger.info(f"Using official euclidean distance algorithm with {actual_palette_type} palette")
         return _apply_official_quantization(image, e6_palette)
     else:
-        # Use PIL quantization
+        # Use PIL quantization - support different dithering algorithms
         palette_image = Image.new('P', (1, 1))
         palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
-        optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+        
+        # Determine dithering algorithm
+        if palette_type.endswith('_ordered'):
+            # Remove '_ordered' suffix for palette lookup
+            actual_palette_type = palette_type.replace('_ordered', '')
+            e6_palette = get_e6_palette(actual_palette_type)
+            palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+            optimized = image.quantize(palette=palette_image, dither=Image.Dither.ORDERED)
+            logger.info(f"Using ORDERED dithering with {actual_palette_type} palette")
+        else:
+            # Default Floyd-Steinberg dithering
+            optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+            logger.info(f"Using Floyd-Steinberg dithering with {palette_type} palette")
+        
         # Return indexed image (P mode) instead of RGB to preserve quantization
         return optimized
 
