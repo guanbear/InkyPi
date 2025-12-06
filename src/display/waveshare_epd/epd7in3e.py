@@ -198,9 +198,10 @@ class EPD:
         return 0
 
     def getbuffer(self, image):
-        # Create a palette with the 6 colors supported by the panel (E6 compatible)
+        # Create a palette matching our _official palettes (with index 4 skip)
+        # Order: Black(0), White(1), Yellow(2), Red(3), Skip Index4(Black), Blue(5), Green(6)
         pal_image = Image.new("P", (1,1))
-        pal_image.putpalette( (0,0,0,  255,255,255,  255,243,56,  191,0,0,  0,0,0,  100,64,255,  67,138,28) + (0,0,0)*249)
+        pal_image.putpalette( (0,0,0,  255,255,255,  255,255,0,  255,0,0,  0,0,0,  0,0,255,  0,255,0) + (0,0,0)*249)
 
         # Check if we need to rotate the image
         imwidth, imheight = image.size
