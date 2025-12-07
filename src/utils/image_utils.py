@@ -197,32 +197,9 @@ def get_e6_palette(palette_type='standard'):
             0, 0, 255,      # Blue    - RGB(0, 0, 255)       - Index 5
             0, 255, 0       # Green   - RGB(0, 255, 0)      - Index 6
         ],
-        'tuned': [
-            0, 0, 0,        # Black   - RGB(0, 0, 0)
-            255, 255, 255,  # White   - RGB(255, 255, 255)
-            255, 243, 56,   # Yellow  - RGB(255, 243, 56) - Adjusted for e-ink
-            191, 0, 0,      # Red     - RGB(191, 0, 0) - Darker red for better contrast
-            100, 64, 255,   # Blue    - RGB(100, 64, 255) - Purple-blue for e-ink
-            67, 138, 28     # Green   - RGB(67, 138, 28) - Darker green
-        ],
-        'standard_official': [
-            0, 0, 0,        # Black   - RGB(0, 0, 0)
-            255, 255, 255,  # White   - RGB(255, 255, 255)
-            255, 255, 0,    # Yellow  - RGB(255, 255, 0) - Pure yellow
-            255, 0, 0,      # Red     - RGB(255, 0, 0) - Pure red
-            0, 0, 0,        # Index 4 - Skip position (orange placeholder, unused for E6)
-            0, 0, 255,      # Blue    - RGB(0, 0, 255) - Pure blue (now at index 5)
-            0, 255, 0       # Green   - RGB(0, 255, 0) - Pure green (now at index 6)
-        ],
-        'tuned_official': [
-            0, 0, 0,        # Black   - RGB(0, 0, 0)
-            255, 255, 255,  # White   - RGB(255, 255, 255)
-            255, 243, 56,   # Yellow  - RGB(255, 243, 56) - Adjusted for e-ink
-            191, 0, 0,      # Red     - RGB(191, 0, 0) - Darker red for better contrast
-            0, 0, 0,        # Index 4 - Skip position (orange placeholder, unused for E6)
-            100, 64, 255,   # Blue    - RGB(100, 64, 255) - Purple-blue for e-ink (now at index 5)
-            67, 138, 28     # Green   - RGB(67, 138, 28) - Darker green (now at index 6)
-        ]
+        'tuned': [],
+        'standard_official': [],
+        'tuned_official': [],
     }
     return palettes.get(palette_type, palettes['standard'])
 
@@ -259,35 +236,29 @@ def optimize_for_e6_display(image, display_type, palette_type='standard', compar
     actual_palette_type = palette_type
     algorithm_type = None
     
-    if palette_type.endswith('_official'):
-        actual_palette_type = palette_type.replace('_official', '')
-        algorithm_type = 'official'
-    elif palette_type.endswith('_ordered'):
+    # Note: _official options removed for simplicity
+    # Only support standard PIL quantization algorithms
+    if palette_type.endswith('_ordered'):
         actual_palette_type = palette_type.replace('_ordered', '')
         algorithm_type = 'ordered'
     
     e6_palette = get_e6_palette(actual_palette_type)
 
-    # Apply algorithm based on type
-    if algorithm_type == 'official':
-        logger.info(f"Using official euclidean distance algorithm with {actual_palette_type} palette")
-        return _apply_official_quantization(image, e6_palette)
+    # Apply PIL quantization - support different dithering algorithms
+    palette_image = Image.new('P', (1, 1))
+    palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
+    
+    # Determine dithering algorithm
+    if algorithm_type == 'ordered':
+        optimized = image.quantize(palette=palette_image, dither=Image.Dither.ORDERED)
+        logger.info(f"Using ORDERED dithering with {actual_palette_type} palette")
     else:
-        # Use PIL quantization - support different dithering algorithms
-        palette_image = Image.new('P', (1, 1))
-        palette_image.putpalette(e6_palette + [0] * (768 - len(e6_palette)))
-        
-        # Determine dithering algorithm
-        if algorithm_type == 'ordered':
-            optimized = image.quantize(palette=palette_image, dither=Image.Dither.ORDERED)
-            logger.info(f"Using ORDERED dithering with {actual_palette_type} palette")
-        else:
-            # Default Floyd-Steinberg dithering
-            optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
-            logger.info(f"Using Floyd-Steinberg dithering with {actual_palette_type} palette")
-        
-        # Return indexed image (P mode) instead of RGB to preserve quantization
-        return optimized
+        # Default Floyd-Steinberg dithering
+        optimized = image.quantize(palette=palette_image, dither=Image.Dither.FLOYDSTEINBERG)
+        logger.info(f"Using Floyd-Steinberg dithering with {actual_palette_type} palette")
+    
+    # Return indexed image (P mode) instead of RGB to preserve quantization
+    return optimized
 
 def _apply_official_quantization(image, e6_palette):
     """
