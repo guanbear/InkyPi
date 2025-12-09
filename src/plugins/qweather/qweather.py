@@ -245,6 +245,14 @@ class QWeather(BasePlugin):
             template_params['dark_mode'] = is_dark_mode
             template_params['display_style'] = display_style
 
+            # Adjust background color based on theme
+            if settings.get('backgroundOption') == 'color':
+                settings = settings.copy()  # Create a copy to avoid modifying original
+                if is_dark_mode:
+                    settings['backgroundColor'] = '#000000'
+                else:
+                    settings['backgroundColor'] = '#FFFFFF'
+
         except Exception as e:
             logger.error(f"QWeather request failed: {str(e)}")
             raise RuntimeError(f"QWeather request failure: {str(e)}")
