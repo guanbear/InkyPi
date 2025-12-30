@@ -692,16 +692,16 @@ class QWeather(BasePlugin):
                 aqi_value = 50
                 category = '良'
             
-            # Map category to color
+            # Map category to color - optimized for E6 display
             color_map = {
-                '优': '#00CC00',
-                '良': '#CC9900',
-                '轻度污染': '#FF6600',
-                '中度污染': '#FF0000',
-                '重度污染': '#8F3F97',
-                '严重污染': '#7E0023'
+                '优': '#0000FF',      # Pure blue (E6) - Excellent
+                '良': '#00FF00',      # Pure green (E6) - Good
+                '轻度污染': '#FFFF00', # Pure yellow (E6) - Light Pollution
+                '中度污染': '#FF0000', # Pure red (E6) - Moderate Pollution
+                '重度污染': '#800080', # Purple (E6) - Heavy Pollution
+                '严重污染': '#8B0000'  # Dark red - Severe Pollution
             }
-            color = color_map.get(category, '#CC9900')
+            color = color_map.get(category, '#00FF00')
         else:
             # For future days, use weather-based estimation
             import random
@@ -724,25 +724,25 @@ class QWeather(BasePlugin):
             if wind_speed > 15:
                 base_aqi = max(20, base_aqi - 20)
             
-            # Determine category and color
+            # Determine category and color - optimized for E6 display
             if base_aqi <= 50:
                 category = "优"
-                color = "#00CC00"  # Green
+                color = "#0000FF"  # Pure blue (E6)
             elif base_aqi <= 100:
                 category = "良"
-                color = "#CC9900"  # Darker Yellow/Mustard
+                color = "#00FF00"  # Pure green (E6)
             elif base_aqi <= 150:
                 category = "轻度污染"
-                color = "#FF6600"  # Orange
+                color = "#FFFF00"  # Pure yellow (E6)
             elif base_aqi <= 200:
                 category = "中度污染"
-                color = "#FF0000"  # Red
+                color = "#FF0000"  # Pure red (E6)
             elif base_aqi <= 300:
                 category = "重度污染"
-                color = "#8F3F97"  # Purple
+                color = "#800080"  # Purple (E6)
             else:
                 category = "严重污染"
-                color = "#7E0023"  # Maroon
+                color = "#8B0000"  # Dark red
             
         return {
             "category": category,
@@ -1079,28 +1079,28 @@ class QWeather(BasePlugin):
         return data_points, sunrise_dt, sunset_dt
 
     def get_aqi_color(self, aqi_value):
-        """Return color based on AQI value"""
+        """Return color based on AQI value - optimized for E6 display"""
         if aqi_value == 'N/A':
             return None
-        
+
         try:
             aqi = int(aqi_value)
         except (ValueError, TypeError):
             return None
-            
-        # AQI color standards - darker colors for better visibility
+
+        # AQI color standards - optimized for E6 pure colors
         if aqi <= 50:
-            return "#00CC00"  # Darker Green - Good
+            return "#0000FF"  # Pure blue (E6) - Excellent
         elif aqi <= 100:
-            return "#CC9900"  # Darker Yellow/Mustard - Moderate  
+            return "#00FF00"  # Pure green (E6) - Good
         elif aqi <= 150:
-            return "#FF6600"  # Orange - Unhealthy for Sensitive
+            return "#FFFF00"  # Pure yellow (E6) - Light Pollution
         elif aqi <= 200:
-            return "#FF0000"  # Red - Unhealthy
+            return "#FF0000"  # Pure red (E6) - Moderate Pollution
         elif aqi <= 300:
-            return "#8F3F97"  # Purple - Very Unhealthy
+            return "#800080"  # Purple (E6) - Heavy Pollution
         else:
-            return "#7E0023"  # Maroon - Hazardous
+            return "#8B0000"  # Dark red - Severe Pollution
 
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         if time_format == "24h":
@@ -1147,11 +1147,11 @@ class QWeather(BasePlugin):
             return []
 
         severity_colors = {
-            "extreme": {"bg": "#8B0000", "text": "#FFFFFF"},    # 深红 - 极端/红色预警
-            "severe": {"bg": "#FF4500", "text": "#FFFFFF"},      # 橙红 - 严重/橙色预警  
-            "moderate": {"bg": "#FFD700", "text": "#000000"},    # 金黄 - 中等/黄色预警
-            "minor": {"bg": "#1E90FF", "text": "#FFFFFF"},       # 蓝色 - 轻微/蓝色预警
-            "unknown": {"bg": "#1E90FF", "text": "#FFFFFF"}      # 蓝色 - 未知/默认
+            "extreme": {"bg": "#FF0000", "text": "#FFFFFF"},     # Pure red (E6) - 极端/红色预警
+            "severe": {"bg": "#FF4500", "text": "#FFFFFF"},      # Orange-red - 严重/橙色预警
+            "moderate": {"bg": "#FFFF00", "text": "#000000"},     # Pure yellow (E6) - 中等/黄色预警
+            "minor": {"bg": "#0000FF", "text": "#FFFFFF"},        # Pure blue (E6) - 轻微/蓝色预警
+            "unknown": {"bg": "#0000FF", "text": "#FFFFFF"}       # Pure blue (E6) - 未知/默认
         }
 
         parsed_alerts = []
@@ -1165,9 +1165,14 @@ class QWeather(BasePlugin):
             
             # Simplify headline by removing weather station prefix
             if headline:
-                # Remove patterns like "东城区气象台发布", "北京市气象台发布", "海南省气象局发布", etc.
+                # Remove patterns like "东城区气象台发布", "北京市气象台xx时发布", "海南省气象局发布", "xx点xx分发布", etc.
                 import re
-                headline = re.sub(r'.*?气象[台局]发布', '', headline)
+                # Matches patterns like:
+                # - xxx气象台发布, xxx气象局发布
+                # - xxx气象台xx时发布, xxx气象局xx时发布
+                # - xxx气象台xx点发布, xxx气象局xx点发布
+                # - xxx气象台xx点xx分发布, xxx气象局xx点xx分发布
+                headline = re.sub(r'.*?气象[台局](\d+[时点](\d+分)?)?发布', '', headline)
                 headline = headline.strip()
                 if not headline and event_name:
                     headline = event_name

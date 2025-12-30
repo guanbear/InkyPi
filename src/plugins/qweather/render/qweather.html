@@ -227,10 +227,10 @@
       const gradient = ctx.createLinearGradient(left, 0, right, 0);
 
       // Define colors - optimized for E6 display
-      // Use pure colors from E6 tuned palette for best contrast
+      // Use pure colors from E6 standard palette for best contrast
       const dayColor = 'rgb(255, 255, 0)'; // Pure yellow (E6 standard palette) - bright and clear
-      const nightColorLight = 'rgb(100, 64, 255)'; // Purple-blue (E6 tuned palette) - better contrast on e-ink
-      const nightColorDark = 'rgb(100, 181, 246)'; // Light blue for dark mode
+      const nightColorLight = 'rgb(0, 0, 255)'; // Pure blue (E6 standard palette) - best contrast on e-ink
+      const nightColorDark = 'rgb(0, 0, 180)'; // Darker blue for dark mode visibility
       const nightColor = isDarkMode ? nightColorDark : nightColorLight;
 
       // Parse times
