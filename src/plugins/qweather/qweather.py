@@ -494,7 +494,9 @@ class QWeather(BasePlugin):
         }]
 
     def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default", settings=None):
-        current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style)
+        # Get isDay for current icon (1 = day, 0 = night)
+        is_day = weather_data.get('isDay', '1')
+        current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style, is_day)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
 
@@ -532,7 +534,7 @@ class QWeather(BasePlugin):
             "time_format": time_format
         })
 
-        data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings, air_quality)
+        data['forecast'] = self.parse_forecast(daily_forecast, tz, language, display_style, settings, air_quality, is_day)
         data['data_points'], sunrise_dt, sunset_dt = self.parse_data_points(weather_data, daily_forecast[0] if daily_forecast else {}, air_quality, tz, units, time_format, language, display_style)
 
         merge_minutely = settings.get("mergeMinutelyData", "false").lower() == "true"
@@ -556,14 +558,15 @@ class QWeather(BasePlugin):
 
         return data, sunrise_dt, sunset_dt
 
-    def map_qweather_icon(self, qweather_icon, display_style="default"):
+    def map_qweather_icon(self, qweather_icon, display_style="default", is_day="1"):
         """
-        Map QWeather icon codes to appropriate file paths based on display style.
-        
+        Map QWeather icon codes to appropriate file paths based on display style and day/night.
+
         Args:
             qweather_icon: QWeather API icon code (e.g., "100", "101")
-            display_style: Display style ("default", "nothing", "eink")
-            
+            display_style: Display style ("default", "nothing", "qweather")
+            is_day: "1" for day, "0" for night
+
         Returns:
             Icon file path relative to plugin directory
         """
@@ -571,35 +574,60 @@ class QWeather(BasePlugin):
         if display_style == "qweather":
             # QWeather icon codes are used as-is for SVG files
             return f"qweather/{qweather_icon}"
-        
+
         # For nothing style, map to pixel icons
         if display_style == "nothing":
             # Map to OpenWeather-style codes first
             base_icon = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
+
+            # Only certain icons have day/night variants
+            day_night_icons = ["01", "02", "10"]
+            icon_code = base_icon[:2]
+
+            # Apply night suffix if applicable
+            if is_day == "0" and icon_code in day_night_icons:
+                base_icon = icon_code + "n"
+
             pixel_icon_map = {
                 "01d": "sun",     # 晴天 -> 太阳
+                "01n": "moon",    # 晴夜 -> 月亮
                 "02d": "k0",      # 少云 -> 太阳+云
+                "02n": "l0",      # 少云夜 -> 月亮+云
                 "03d": "Pf",      # 多云 -> 云
                 "04d": "Hx",      # 阴天 -> 厚云
                 "09d": "uu",      # 大雨 -> 云+大雨
                 "10d": "xc",      # 雨 -> 云+雨
+                "10n": "tc",      # 雨夜 -> 云+雨夜
                 "11d": "gk",      # 雷暴 -> 云+闪电
                 "13d": "nt",      # 雪 -> 云+雪
                 "50d": "p8"       # 雾/霾 -> 雾
             }
             pixel_icon = pixel_icon_map.get(base_icon, "sun")
             return f"pixel/{pixel_icon}"
-        
-        # Default style uses OpenWeather-style mapping
-        return QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
-    def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default", settings=None, air_quality=None):
+        # Default style uses OpenWeather-style mapping
+        # Only certain icons have day/night variants
+        day_night_icons = ["01", "02", "10"]
+        icon_code = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")[:2]
+
+        if is_day == "0" and icon_code in day_night_icons:
+            return icon_code + "n"
+        return icon_code + "d"
+
+    def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default", settings=None, air_quality=None, current_is_day="1"):
         forecast = []
         today = datetime.now(tz).date()
 
         for idx, day in enumerate(daily_forecast):
-            weather_icon = self.map_qweather_icon(day.get('iconDay', '100'), display_style)
-            
+            # Use iconNight for today if it's currently nighttime
+            dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
+            if dt.date() == today and current_is_day == "0":
+                icon_code = day.get('iconNight', day.get('iconDay', '100'))
+            else:
+                icon_code = day.get('iconDay', '100')
+
+            weather_icon = self.map_qweather_icon(icon_code, display_style, current_is_day if dt.date() == today else "1")
+
             # Handle icon for qweather style - Fixed path
             if display_style == "qweather":
                 svg_path = self.get_plugin_dir(f'icons/{weather_icon}.svg')
@@ -611,10 +639,8 @@ class QWeather(BasePlugin):
                     logger.warning(f"SVG icon not found: {svg_path}, using PNG fallback")
             else:
                 weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
-                
-            weather_icon_code = weather_icon if display_style == "qweather" else ""
 
-            dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
+            weather_icon_code = weather_icon if display_style == "qweather" else ""
 
             if dt.date() == today:
                 day_label = "今天" if language == "zh" else "Today"
@@ -1022,11 +1048,14 @@ class QWeather(BasePlugin):
             })
 
         wind_speed = current_weather.get('windSpeed', '0')
+        wind_dir = current_weather.get('wind360', current_weather.get('windDir', '0'))
+        wind_arrow = self.get_wind_arrow(float(wind_dir) if wind_dir else 0)
         data_points.append({
             "label": LABELS[language]["wind"],
             "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": self.get_plugin_dir('icons/wind.png'),
+            "arrow": wind_arrow
         })
 
         humidity = current_weather.get('humidity', '0')
@@ -1107,11 +1136,32 @@ class QWeather(BasePlugin):
             return dt.strftime("%H:00" if hour_only else "%H:%M")
 
         if include_am_pm:
-            fmt = "%-I %p" if hour_only else "%-I:%M %p"
+            fmt = "%I %p" if hour_only else "%I:%M %p"
         else:
-            fmt = "%-I" if hour_only else "%-I:%M"
+            fmt = "%I" if hour_only else "%I:%M"
 
         return dt.strftime(fmt).lstrip("0")
+
+    def get_wind_arrow(self, wind_deg: float) -> str:
+        """Get wind direction arrow based on wind degrees.
+        Arrow points DOWN (toward) the wind source, not where it's going."""
+        DIRECTIONS = [
+            ("↓", 22.5),    # North (N) - wind from north
+            ("↙", 67.5),    # North-East (NE)
+            ("←", 112.5),   # East (E)
+            ("↖", 157.5),   # South-East (SE)
+            ("↑", 202.5),   # South (S)
+            ("↗", 247.5),   # South-West (SW)
+            ("→", 292.5),   # West (W)
+            ("↘", 337.5),   # North-West (NW)
+            ("↓", 360.0)    # Wrap back to North
+        ]
+        wind_deg = wind_deg % 360
+        for arrow, upper_bound in DIRECTIONS:
+            if wind_deg < upper_bound:
+                return arrow
+
+        return "↓"
 
     def determine_theme(self, theme_mode, sunrise_dt, sunset_dt, tz):
         logger.info(f"determine_theme called with theme_mode: {theme_mode}")

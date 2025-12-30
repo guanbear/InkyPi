@@ -408,6 +408,12 @@ body {
   margin-left: 0.2vw;
 }
 
+.wind-arrow-symbol {
+  font-size: 0.7em;
+  margin-left: 0.2vw;
+  font-weight: normal;
+}
+
 /* Forecast Row */
 .forecast {
   display: flex;
