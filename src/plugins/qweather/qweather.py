@@ -69,16 +69,18 @@ LABELS = {
 }
 
 QWEATHER_ICON_MAP = {
-    "100": "01d",
-    "101": "02d",
-    "102": "02d",
-    "103": "03d",
-    "104": "04d",
-    "150": "02d",
-    "151": "02d",
-    "152": "02d",
-    "153": "03d",
-    "154": "04d",
+    # Day icons
+    "100": "01d",  # Clear/Sunny
+    "101": "02d",  # Cloudy
+    "102": "02d",  # Few clouds
+    "103": "03d",  # Overcast
+    "104": "04d",  # Overcast
+    # Night icons
+    "150": "01n",  # Clear night
+    "151": "02n",  # Cloudy night
+    "152": "02n",  # Few clouds night
+    "153": "03n",  # Overcast night
+    "154": "04n",  # Overcast night
     "300": "09d",
     "301": "09d",
     "302": "10d",
@@ -137,6 +139,15 @@ QWEATHER_ICON_MAP = {
     "805": "04d",
     "806": "04d",
     "807": "04d"
+}
+
+# Map QWeather day icon codes to night icon codes
+QWEATHER_DAY_TO_NIGHT = {
+    "100": "150",  # Clear -> Clear night
+    "101": "151",  # Cloudy -> Cloudy night
+    "102": "152",  # Few clouds -> Few clouds night
+    "103": "153",  # Overcast -> Overcast night
+    "104": "154",  # Overcast -> Overcast night
 }
 
 class QWeather(BasePlugin):
@@ -572,11 +583,17 @@ class QWeather(BasePlugin):
         """
         # For qweather style, use QWeather official SVG icons directly
         if display_style == "qweather":
-            # QWeather icon codes are used as-is for SVG files
+            # Convert day icon code to night icon code if needed
+            if is_day == "0" and str(qweather_icon) in QWEATHER_DAY_TO_NIGHT:
+                qweather_icon = QWEATHER_DAY_TO_NIGHT[str(qweather_icon)]
             return f"qweather/{qweather_icon}"
 
         # For nothing style, map to pixel icons
         if display_style == "nothing":
+            # Convert day icon code to night icon code if needed
+            if is_day == "0" and str(qweather_icon) in QWEATHER_DAY_TO_NIGHT:
+                qweather_icon = QWEATHER_DAY_TO_NIGHT[str(qweather_icon)]
+
             # Map to OpenWeather-style codes first
             base_icon = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")
 
@@ -606,6 +623,10 @@ class QWeather(BasePlugin):
             return f"pixel/{pixel_icon}"
 
         # Default style uses OpenWeather-style mapping
+        # Convert day icon code to night icon code if needed
+        if is_day == "0" and str(qweather_icon) in QWEATHER_DAY_TO_NIGHT:
+            qweather_icon = QWEATHER_DAY_TO_NIGHT[str(qweather_icon)]
+
         # Only certain icons have day/night variants
         day_night_icons = ["01", "02", "10"]
         icon_code = QWEATHER_ICON_MAP.get(str(qweather_icon), "01d")[:2]
@@ -619,14 +640,15 @@ class QWeather(BasePlugin):
         today = datetime.now(tz).date()
 
         for idx, day in enumerate(daily_forecast):
-            # Use iconNight for today if it's currently nighttime
+            # QWeather daily forecast only provides iconDay
+            # For today, use night icons if currently nighttime
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
-            if dt.date() == today and current_is_day == "0":
-                icon_code = day.get('iconNight', day.get('iconDay', '100'))
-            else:
-                icon_code = day.get('iconDay', '100')
+            icon_code = day.get('iconDay', '100')
 
-            weather_icon = self.map_qweather_icon(icon_code, display_style, current_is_day if dt.date() == today else "1")
+            # Determine if this should be a night icon
+            is_day_icon = "1" if dt.date() != today else current_is_day
+
+            weather_icon = self.map_qweather_icon(icon_code, display_style, is_day_icon)
 
             # Handle icon for qweather style - Fixed path
             if display_style == "qweather":
