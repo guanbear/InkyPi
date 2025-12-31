@@ -209,8 +209,15 @@ class QWeather(BasePlugin):
 
             weather_data = self.get_weather_data(host, api_key, location_id, units)
             daily_forecast = self.get_daily_forecast(host, api_key, location_id, units)
-            minutely_forecast = self.get_minutely_forecast(host, api_key, location_id)
             hourly_forecast = self.get_hourly_forecast(host, api_key, location_id, units)
+
+            # Only call minutely API if mergeMinutelyData is enabled
+            merge_minutely = settings.get("mergeMinutelyData", "false").lower() == "true"
+            if merge_minutely:
+                minutely_forecast = self.get_minutely_forecast(host, api_key, location_id)
+            else:
+                minutely_forecast = []
+
             air_quality = self.get_air_quality(host, api_key, location_id)
             weather_alerts = self.get_weather_alerts(host, api_key, lat, long)
 
