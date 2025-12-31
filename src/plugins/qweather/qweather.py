@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import requests
 import logging
+import json
 from datetime import datetime, timezone, date, timedelta
 from astral import moon
 import pytz
@@ -160,6 +161,56 @@ class QWeather(BasePlugin):
         }
         template_params['style_settings'] = True
         return template_params
+
+    def _get_cache_dir(self):
+        """Get the cache directory path."""
+        cache_dir = os.path.join(self.get_plugin_dir(), 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        return cache_dir
+
+    def _get_cached_data(self, cache_key, api_func, cache_minutes):
+        """
+        Get data from cache or fetch from API.
+
+        Args:
+            cache_key: Unique identifier for the cache file
+            api_func: Function to call if cache is expired/missing
+            cache_minutes: Cache expiration time in minutes
+
+        Returns:
+            Cached or fresh data
+        """
+        cache_dir = self._get_cache_dir()
+        cache_file = os.path.join(cache_dir, f'{cache_key}.json')
+
+        # Check if cache exists and is valid
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, 'r') as f:
+                    cached = json.load(f)
+                    cache_time = datetime.fromisoformat(cached.get('time', ''))
+                    if datetime.now() - cache_time < timedelta(minutes=cache_minutes):
+                        logger.info(f"Using cached data for {cache_key} (age: {(datetime.now() - cache_time).seconds} seconds)")
+                        return cached['data']
+            except (json.JSONDecodeError, ValueError, KeyError) as e:
+                logger.warning(f"Failed to read cache for {cache_key}: {e}")
+
+        # Fetch fresh data
+        logger.info(f"Fetching fresh data for {cache_key}")
+        data = api_func()
+
+        # Save to cache
+        try:
+            with open(cache_file, 'w') as f:
+                json.dump({
+                    'time': datetime.now().isoformat(),
+                    'data': data
+                }, f)
+            logger.info(f"Cached data for {cache_key} for {cache_minutes} minutes")
+        except Exception as e:
+            logger.warning(f"Failed to cache data for {cache_key}: {e}")
+
+        return data
 
     def generate_image(self, settings, device_config):
         # Store settings for debug access
@@ -382,29 +433,35 @@ class QWeather(BasePlugin):
         return data['now']
 
     def get_daily_forecast(self, host, api_key, location_id, units):
-        url = f"{host}/v7/weather/7d"
-        params = {
-            "location": location_id,
-            "key": api_key,
-            "unit": "m" if units == "metric" else "i"
-        }
-        response = requests.get(url, params=params)
+        cache_key = f"daily_{location_id}_{units}"
 
-        if response.status_code != 200:
-            logger.error(f"Failed to retrieve daily forecast. Status: {response.status_code}, Content: {response.content}")
-            raise RuntimeError("Failed to retrieve daily forecast.")
+        def fetch_daily():
+            url = f"{host}/v7/weather/7d"
+            params = {
+                "location": location_id,
+                "key": api_key,
+                "unit": "m" if units == "metric" else "i"
+            }
+            response = requests.get(url, params=params)
 
-        try:
-            data = response.json()
-        except Exception as e:
-            logger.error(f"Failed to parse JSON response: {e}, Content: {response.text}")
-            raise RuntimeError("Failed to parse forecast data.")
+            if response.status_code != 200:
+                logger.error(f"Failed to retrieve daily forecast. Status: {response.status_code}, Content: {response.content}")
+                raise RuntimeError("Failed to retrieve daily forecast.")
 
-        if data.get('code') != '200':
-            logger.error(f"Invalid forecast response: {data}")
-            raise RuntimeError("Failed to get valid forecast data.")
+            try:
+                data = response.json()
+            except Exception as e:
+                logger.error(f"Failed to parse JSON response: {e}, Content: {response.text}")
+                raise RuntimeError("Failed to parse forecast data.")
 
-        return data['daily']
+            if data.get('code') != '200':
+                logger.error(f"Invalid forecast response: {data}")
+                raise RuntimeError("Failed to get valid forecast data.")
+
+            return data['daily']
+
+        # Cache for 1 hour (60 minutes)
+        return self._get_cached_data(cache_key, fetch_daily, 60)
 
     def get_hourly_forecast(self, host, api_key, location_id, units):
         url = f"{host}/v7/weather/24h"
@@ -456,51 +513,63 @@ class QWeather(BasePlugin):
         return data.get('minutely', [])
 
     def get_air_quality(self, host, api_key, location_id):
-        long, lat = location_id.split(',')
-        url = f"{host}/airquality/v1/current/{lat}/{long}"
-        params = {
-            "key": api_key
-        }
-        response = requests.get(url, params=params)
+        cache_key = f"aqi_{location_id}"
 
-        if response.status_code != 200:
-            logger.error(f"Failed to get air quality data: {response.content}")
+        def fetch_aqi():
+            long, lat = location_id.split(',')
+            url = f"{host}/airquality/v1/current/{lat}/{long}"
+            params = {
+                "key": api_key
+            }
+            response = requests.get(url, params=params)
+
+            if response.status_code != 200:
+                logger.error(f"Failed to get air quality data: {response.content}")
+                return {}
+
+            try:
+                data = response.json()
+                if data.get('indexes') and len(data['indexes']) > 0:
+                    cn_mee = data['indexes'][0]
+                    return {
+                        'aqi': cn_mee.get('aqi', 'N/A'),
+                        'category': cn_mee.get('category', '')
+                    }
+            except Exception as e:
+                logger.error(f"Failed to parse air quality response: {e}")
+
             return {}
 
-        try:
-            data = response.json()
-            if data.get('indexes') and len(data['indexes']) > 0:
-                cn_mee = data['indexes'][0]
-                return {
-                    'aqi': cn_mee.get('aqi', 'N/A'),
-                    'category': cn_mee.get('category', '')
-                }
-        except Exception as e:
-            logger.error(f"Failed to parse air quality response: {e}")
-
-        return {}
+        # Cache for 30 minutes
+        return self._get_cached_data(cache_key, fetch_aqi, 30)
 
     def get_weather_alerts(self, host, api_key, lat, long):
-        url = f"{host}/weatheralert/v1/current/{lat}/{long}"
-        params = {
-            "key": api_key
-        }
-        response = requests.get(url, params=params)
+        cache_key = f"alerts_{lat}_{long}"
 
-        if response.status_code != 200:
-            logger.error(f"Failed to get weather alerts: {response.content}")
+        def fetch_alerts():
+            url = f"{host}/weatheralert/v1/current/{lat}/{long}"
+            params = {
+                "key": api_key
+            }
+            response = requests.get(url, params=params)
+
+            if response.status_code != 200:
+                logger.error(f"Failed to get weather alerts: {response.content}")
+                return []
+
+            try:
+                data = response.json()
+                alerts = data.get('alerts', [])
+                if alerts:
+                    logger.info(f"Found {len(alerts)} weather alert(s)")
+                return alerts
+            except Exception as e:
+                logger.error(f"Failed to parse weather alerts response: {e}")
+
             return []
 
-        try:
-            data = response.json()
-            alerts = data.get('alerts', [])
-            if alerts:
-                logger.info(f"Found {len(alerts)} weather alert(s)")
-            return alerts
-        except Exception as e:
-            logger.error(f"Failed to parse weather alerts response: {e}")
-
-        return []
+        # Cache for 5 minutes
+        return self._get_cached_data(cache_key, fetch_alerts, 5)
 
     def create_mock_alert(self, headline, description, severity):
         return [{
