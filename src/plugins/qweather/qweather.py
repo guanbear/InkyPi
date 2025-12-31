@@ -741,16 +741,16 @@ class QWeather(BasePlugin):
                 aqi_value = 50
                 category = '良'
             
-            # Map category to color - optimized for E6 display
+            # Map category to color - optimized for E6 but keeping original colors
             color_map = {
-                '优': '#0000FF',      # Pure blue (E6) - Excellent
-                '良': '#00FF00',      # Pure green (E6) - Good
-                '轻度污染': '#FFFF00', # Pure yellow (E6) - Light Pollution
+                '优': '#00CC00',      # Green - Excellent
+                '良': '#FFAA00',      # Yellow-Orange (lighter than original) - Good
+                '轻度污染': '#FF6600', # Orange - Light Pollution
                 '中度污染': '#FF0000', # Pure red (E6) - Moderate Pollution
-                '重度污染': '#800080', # Purple (E6) - Heavy Pollution
-                '严重污染': '#8B0000'  # Dark red - Severe Pollution
+                '重度污染': '#9900CC', # Purple - Heavy Pollution
+                '严重污染': '#990000'  # Dark red - Severe Pollution
             }
-            color = color_map.get(category, '#00FF00')
+            color = color_map.get(category, '#FFAA00')
         else:
             # For future days, use weather-based estimation
             import random
@@ -773,25 +773,25 @@ class QWeather(BasePlugin):
             if wind_speed > 15:
                 base_aqi = max(20, base_aqi - 20)
             
-            # Determine category and color - optimized for E6 display
+            # Determine category and color - optimized for E6 but keeping original colors
             if base_aqi <= 50:
                 category = "优"
-                color = "#0000FF"  # Pure blue (E6)
+                color = "#00CC00"  # Green
             elif base_aqi <= 100:
                 category = "良"
-                color = "#00FF00"  # Pure green (E6)
+                color = "#FFAA00"  # Yellow-Orange
             elif base_aqi <= 150:
                 category = "轻度污染"
-                color = "#FFFF00"  # Pure yellow (E6)
+                color = "#FF6600"  # Orange
             elif base_aqi <= 200:
                 category = "中度污染"
                 color = "#FF0000"  # Pure red (E6)
             elif base_aqi <= 300:
                 category = "重度污染"
-                color = "#800080"  # Purple (E6)
+                color = "#9900CC"  # Purple
             else:
                 category = "严重污染"
-                color = "#8B0000"  # Dark red
+                color = "#990000"  # Dark red
             
         return {
             "category": category,
@@ -1131,7 +1131,7 @@ class QWeather(BasePlugin):
         return data_points, sunrise_dt, sunset_dt
 
     def get_aqi_color(self, aqi_value):
-        """Return color based on AQI value - optimized for E6 display"""
+        """Return color based on AQI value - optimized for E6 but keeping original colors"""
         if aqi_value == 'N/A':
             return None
 
@@ -1140,19 +1140,19 @@ class QWeather(BasePlugin):
         except (ValueError, TypeError):
             return None
 
-        # AQI color standards - optimized for E6 pure colors
+        # AQI color standards - optimized for E6 but keeping original colors
         if aqi <= 50:
-            return "#0000FF"  # Pure blue (E6) - Excellent
+            return "#00CC00"  # Green - Excellent
         elif aqi <= 100:
-            return "#00FF00"  # Pure green (E6) - Good
+            return "#FFAA00"  # Yellow-Orange - Good
         elif aqi <= 150:
-            return "#FFFF00"  # Pure yellow (E6) - Light Pollution
+            return "#FF6600"  # Orange - Light Pollution
         elif aqi <= 200:
             return "#FF0000"  # Pure red (E6) - Moderate Pollution
         elif aqi <= 300:
-            return "#800080"  # Purple (E6) - Heavy Pollution
+            return "#9900CC"  # Purple - Heavy Pollution
         else:
-            return "#8B0000"  # Dark red - Severe Pollution
+            return "#990000"  # Dark red - Severe Pollution
 
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         if time_format == "24h":
