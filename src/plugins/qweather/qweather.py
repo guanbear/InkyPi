@@ -310,8 +310,8 @@ class QWeather(BasePlugin):
             template_params['sunrise_icon'] = self.get_plugin_dir('icons/sunrise.png')
             template_params['sunset_icon'] = self.get_plugin_dir('icons/sunset.png')
 
-            # Use isDay from API for theme determination (more reliable than local calculation)
-            is_dark_mode = self.determine_theme(theme_mode, weather_data.get('isDay', '1'))
+            # Use sunrise/sunset time for theme determination (ensures theme switches correctly throughout the day)
+            is_dark_mode = self.determine_theme(theme_mode, sunrise_dt, sunset_dt, tz)
             template_params['dark_mode'] = is_dark_mode
             template_params['display_style'] = display_style
 
@@ -1262,18 +1262,26 @@ class QWeather(BasePlugin):
 
         return "↓"
 
-    def determine_theme(self, theme_mode, is_day):
+    def determine_theme(self, theme_mode, sunrise_dt, sunset_dt, tz):
         """
-        Determine theme mode based on settings and isDay from API.
+        Determine theme mode based on settings and sunrise/sunset time.
 
         Args:
             theme_mode: "light", "dark", or "auto"
-            is_day: "1" for daytime, "0" for nighttime (from QWeather API)
+            sunrise_dt: Sunrise datetime
+            sunset_dt: Sunset datetime
+            tz: Timezone
 
         Returns:
             True for dark mode, False for light mode
         """
-        logger.info(f"determine_theme called with theme_mode: {theme_mode}, is_day: {is_day}")
+        logger.info(f"determine_theme called with theme_mode: {theme_mode}")
+
+        if sunrise_dt and sunset_dt:
+            now = datetime.now(tz)
+            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}")
+        else:
+            logger.info(f"Missing sunrise/sunset times")
 
         if theme_mode == "light":
             logger.info("Theme mode set to light")
@@ -1282,10 +1290,13 @@ class QWeather(BasePlugin):
             logger.info("Theme mode set to dark")
             return True
         elif theme_mode == "auto":
-            # Use isDay from API: "1" = day, "0" = night
-            result = is_day != "1"
-            logger.info(f"Auto theme result: {result} (is_day={is_day})")
-            return result
+            if sunrise_dt and sunset_dt:
+                now = datetime.now(tz)
+                result = now < sunrise_dt or now >= sunset_dt
+                logger.info(f"Auto theme result: {result} (current time: {now}, sunrise: {sunrise_dt}, sunset: {sunset_dt})")
+                return result
+            logger.warning("Auto theme mode but no sunrise/sunset data, defaulting to light")
+            return False
         logger.warning(f"Unknown theme mode: {theme_mode}, defaulting to light")
         return False
 
