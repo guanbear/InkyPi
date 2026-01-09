@@ -1325,14 +1325,9 @@ class QWeather(BasePlugin):
             
             # Simplify headline by removing weather station prefix
             if headline:
-                # Remove patterns like "东城区气象台发布", "北京市气象台xx时发布", "海南省气象局发布", "xx点xx分发布", etc.
                 import re
-                # Matches patterns like:
-                # - xxx气象台发布, xxx气象局发布
-                # - xxx气象台xx时发布, xxx气象局xx时发布
-                # - xxx气象台xx点发布, xxx气象局xx点发布
-                # - xxx气象台xx点xx分发布, xxx气象局xx点xx分发布
-                headline = re.sub(r'.*?气象[台局](\d+[时点](\d+分)?)?发布', '', headline)
+                # Match everything before "发布" and remove it
+                headline = re.sub(r'.*?发布', '', headline)
                 headline = headline.strip()
                 if not headline and event_name:
                     headline = event_name
