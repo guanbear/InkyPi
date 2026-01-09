@@ -737,10 +737,14 @@ class QWeather(BasePlugin):
         today = datetime.now(tz).date()
 
         for idx, day in enumerate(daily_forecast):
-            # QWeather daily forecast only provides iconDay (day icons)
-            # Only today can show night icon based on current isDay, other days always show day icons
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
-            icon_code = day.get('iconDay', '100')
+
+            # For today, use iconNight if current time is night, otherwise use iconDay
+            # For other days, always use iconDay
+            if dt.date() == today and current_is_day == "0":
+                icon_code = day.get('iconNight', day.get('iconDay', '100'))
+            else:
+                icon_code = day.get('iconDay', '100')
 
             # Use current_is_day only for today, force day icon for all other days
             is_day_icon = current_is_day if dt.date() == today else "1"
