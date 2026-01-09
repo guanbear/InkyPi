@@ -582,8 +582,28 @@ class QWeather(BasePlugin):
         }]
 
     def parse_weather_data(self, weather_data, daily_forecast, minutely_forecast, hourly_forecast, air_quality, weather_alerts, tz, units, time_format, language="zh", display_style="default", settings=None):
-        # Get isDay for current icon (1 = day, 0 = night)
-        is_day = weather_data.get('isDay', '1')
+        # Get sunrise and sunset times to determine if it's day or night
+        # QWeather API doesn't return isDay field, so we need to calculate it
+        now = datetime.now(tz)
+        today_forecast = daily_forecast[0] if daily_forecast else {}
+
+        sunrise_str = today_forecast.get('sunrise')
+        sunset_str = today_forecast.get('sunset')
+
+        is_day = '1'  # Default to day
+        if sunrise_str and sunset_str:
+            naive_sunrise = datetime.strptime(sunrise_str, "%H:%M").replace(
+                year=now.year, month=now.month, day=now.day
+            )
+            naive_sunset = datetime.strptime(sunset_str, "%H:%M").replace(
+                year=now.year, month=now.month, day=now.day
+            )
+            sunrise_dt = tz.localize(naive_sunrise)
+            sunset_dt = tz.localize(naive_sunset)
+            # Check if current time is between sunrise and sunset
+            is_day = '1' if sunrise_dt <= now < sunset_dt else '0'
+            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}, is_day: {is_day}")
+
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style, is_day)
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
