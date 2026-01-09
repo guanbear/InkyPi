@@ -1314,20 +1314,24 @@ class QWeather(BasePlugin):
             "unknown": {"bg": "#0000FF", "text": "#FFFFFF"}       # Pure blue (E6) - 未知/默认
         }
 
-        parsed_alerts = []
-        for alert in alerts[:3]:
+        # Use a dictionary to deduplicate alerts by headline (severity + type)
+        # Keep the most recent one (latest issued time)
+        unique_alerts = {}
+        for alert in alerts:
             severity = alert.get('severity', 'minor')
             colors = severity_colors.get(severity, severity_colors['minor'])
 
             event_name = alert.get('eventType', {}).get('name', '')
             headline = alert.get('headline', event_name)
             description = alert.get('description', '')
-            
+
             # Simplify headline by removing weather station prefix
             if headline:
                 import re
                 # Match everything before "发布" and remove it
                 headline = re.sub(r'.*?发布', '', headline)
+                # Remove "信号" suffix
+                headline = re.sub(r'信号$', '', headline)
                 headline = headline.strip()
                 if not headline and event_name:
                     headline = event_name
@@ -1335,15 +1339,27 @@ class QWeather(BasePlugin):
             if language == "en" and not headline:
                 headline = alert.get('eventType', {}).get('code', 'Weather Alert')
 
-            parsed_alerts.append({
-                'headline': headline,
-                'description': description[:200] if description else '',
-                'severity': severity,
-                'bg_color': colors['bg'],
-                'text_color': colors['text'],
-                'issued_time': alert.get('issuedTime', ''),
-                'expire_time': alert.get('expireTime', '')
-            })
+            # Use headline as key to deduplicate
+            if headline not in unique_alerts:
+                unique_alerts[headline] = {
+                    'headline': headline,
+                    'description': description[:200] if description else '',
+                    'severity': severity,
+                    'bg_color': colors['bg'],
+                    'text_color': colors['text'],
+                    'issued_time': alert.get('issuedTime', ''),
+                    'expire_time': alert.get('expireTime', '')
+                }
+            else:
+                # Update with latest issued time if this one is more recent
+                existing_issued = unique_alerts[headline]['issued_time']
+                new_issued = alert.get('issuedTime', '')
+                if new_issued > existing_issued:
+                    unique_alerts[headline]['issued_time'] = new_issued
+                    unique_alerts[headline]['expire_time'] = alert.get('expireTime', '')
+
+        # Convert back to list and limit to 3
+        parsed_alerts = list(unique_alerts.values())[:3]
 
         logger.info(f"Parsed {len(parsed_alerts)} weather alert(s): {parsed_alerts}")
         return parsed_alerts
