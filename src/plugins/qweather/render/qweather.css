@@ -216,7 +216,8 @@ body {
   line-height: 105%;
   white-space: nowrap;
   position: absolute;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   align-content: center;
   pointer-events: none;
 }
