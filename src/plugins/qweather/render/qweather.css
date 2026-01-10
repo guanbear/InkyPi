@@ -430,9 +430,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1dvh 1vw;
+  padding: 1dvh 0.5vw;
   /* border: 1px solid; */ /* Remove border to fill screen */
   border-radius: 1.2vw;
+  flex: 1;
   min-width: 0;
   max-height: 100%;
   gap: 0.5dvh;
