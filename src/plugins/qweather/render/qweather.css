@@ -532,6 +532,18 @@ body {
   text-align: center;
   position: relative;
   line-height: 140%;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+}
+
+.feels-like-label {
+  font-size: 1em;
+}
+
+.feels-like-value {
+  font-size: 1.3em;
+  font-weight: bold;
 }
 
 
@@ -597,17 +609,17 @@ body {
 
 .air-quality-bar {
   padding: 4px 12px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: bold;
   text-align: center;
   width: 100%;
-  background-color: #CC9900; /* Darker yellow for better visibility */
+  background-color: #B8860B; /* Dark goldenrod - deeper yellow/ochre for better visibility */
   color: white;
   border: none;
   display: block;
   box-sizing: border-box;
-  height: 20px;
-  line-height: 12px;
+  height: 22px;
+  line-height: 14px;
 }
 
 .air-quality-bar.rounded {

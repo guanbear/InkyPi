@@ -600,9 +600,11 @@ class QWeather(BasePlugin):
             )
             sunrise_dt = tz.localize(naive_sunrise)
             sunset_dt = tz.localize(naive_sunset)
-            # Check if current time is between sunrise and sunset
-            is_day = '1' if sunrise_dt <= now < sunset_dt else '0'
-            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}, is_day: {is_day}")
+            # Check if current time is between sunrise-30min and sunset
+            # Transition to day mode 30 minutes before sunrise (sky starts getting brighter)
+            sunrise_transition = sunrise_dt - timedelta(minutes=30)
+            is_day = '1' if sunrise_transition <= now < sunset_dt else '0'
+            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunrise transition: {sunrise_transition}, Sunset: {sunset_dt}, is_day: {is_day}")
 
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style, is_day)
         current_temp = float(weather_data.get('temp', 0))
@@ -1316,8 +1318,10 @@ class QWeather(BasePlugin):
         elif theme_mode == "auto":
             if sunrise_dt and sunset_dt:
                 now = datetime.now(tz)
-                result = now < sunrise_dt or now >= sunset_dt
-                logger.info(f"Auto theme result: {result} (current time: {now}, sunrise: {sunrise_dt}, sunset: {sunset_dt})")
+                # Transition to day mode 30 minutes before sunrise (sky starts getting brighter)
+                sunrise_transition = sunrise_dt - timedelta(minutes=30)
+                result = now < sunrise_transition or now >= sunset_dt
+                logger.info(f"Auto theme result: {result} (current time: {now}, sunrise transition: {sunrise_transition}, sunset: {sunset_dt})")
                 return result
             logger.warning("Auto theme mode but no sunrise/sunset data, defaulting to light")
             return False
@@ -1342,12 +1346,20 @@ class QWeather(BasePlugin):
         # Keep the most recent one (latest issued time)
         unique_alerts = {}
         for alert in alerts:
-            severity = alert.get('severity', 'minor')
-            colors = severity_colors.get(severity, severity_colors['minor'])
-
             event_name = alert.get('eventType', {}).get('name', '')
             headline = alert.get('headline', event_name)
             description = alert.get('description', '')
+
+            # Filter out alerts with "解除" (cancelled/lifted) in headline or description
+            if headline and '解除' in headline:
+                logger.info(f"Skipping cancelled alert: {headline}")
+                continue
+            if description and '解除' in description:
+                logger.info(f"Skipping cancelled alert with description containing '解除': {headline}")
+                continue
+
+            severity = alert.get('severity', 'minor')
+            colors = severity_colors.get(severity, severity_colors['minor'])
 
             # Simplify headline by removing weather station prefix
             if headline:

@@ -37,7 +37,7 @@
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
         <div class="current-weather">
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
-          <div class="feels-like">{{ labels.feels_like }} {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
+          <div class="feels-like"><span class="feels-like-label">{{ labels.feels_like }}</span> <span class="feels-like-value">{{ feels_like }}{% if units != "standard" %}°{% endif %}</span></div>
           <div class="min-max">{{ forecast[0].high }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].low }}{% if units != "standard" %}°{% endif %}</div>
         </div>
     </div>
@@ -53,7 +53,7 @@
           </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
-            <div class="data-point-measurement"{% if dp.aqi_color %} style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.measurement }}{% if dp.unit %}
+            <div class="data-point-measurement"{% if dp.aqi_color %} style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.measurement }}{% if dp.unit and dp.label != labels.air_quality %}
               <span class="data-point-unit"{% if dp.aqi_color %} style="color: {{ dp.aqi_color }};"{% endif %}>{{ dp.unit }}</span>{% endif %}
               {% if dp.arrow %}
               <span class="wind-arrow-symbol">{{ dp.arrow }}</span>
