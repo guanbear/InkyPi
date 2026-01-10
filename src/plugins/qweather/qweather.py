@@ -1234,7 +1234,7 @@ class QWeather(BasePlugin):
         return data_points, sunrise_dt, sunset_dt
 
     def get_aqi_color(self, aqi_value):
-        """Return color based on AQI value - optimized for E6 but keeping original colors"""
+        """Return color based on AQI value - optimized for E6 display"""
         if aqi_value == 'N/A':
             return None
 
@@ -1243,11 +1243,11 @@ class QWeather(BasePlugin):
         except (ValueError, TypeError):
             return None
 
-        # AQI color standards - optimized for E6 but keeping original colors
+        # AQI color standards - optimized for E6 display
         if aqi <= 50:
             return "#00CC00"  # Green - Excellent
         elif aqi <= 100:
-            return "#FFAA00"  # Yellow-Orange - Good
+            return "#CC9900"  # Dark yellow/mustard - Good
         elif aqi <= 150:
             return "#FF6600"  # Orange - Light Pollution
         elif aqi <= 200:
