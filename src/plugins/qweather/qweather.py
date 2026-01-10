@@ -875,13 +875,13 @@ class QWeather(BasePlugin):
             if wind_speed > 15:
                 base_aqi = max(20, base_aqi - 20)
             
-            # Determine category and color - optimized for E6 but keeping original colors
+            # Determine category and color - E6 standard colors for best visibility
             if base_aqi <= 50:
                 category = "优"
                 color = "#00CC00"  # Green
             elif base_aqi <= 100:
                 category = "良"
-                color = "#FFAA00"  # Yellow-Orange
+                color = "#FFFF00"  # Pure yellow (E6 standard)
             elif base_aqi <= 150:
                 category = "轻度污染"
                 color = "#FF6600"  # Orange
