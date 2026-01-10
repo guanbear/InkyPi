@@ -532,7 +532,8 @@ body {
   text-align: center;
   position: relative;
   line-height: 140%;
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: baseline;
   gap: 0.3em;
 }
@@ -613,8 +614,7 @@ body {
   font-weight: bold;
   text-align: center;
   width: 100%;
-  background-color: #B8860B; /* Dark goldenrod - deeper yellow/ochre for better visibility */
-  color: white;
+  /* Background and text colors are set via inline styles in template */
   border: none;
   display: block;
   box-sizing: border-box;

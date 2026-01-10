@@ -101,8 +101,8 @@
         {% if day.air_quality_display %}
         <div class="separator"></div>
         <div class="air-quality-container">
-          <div class="air-quality-bar {% if day.air_quality_display.rounded == 'True' %}rounded{% endif %}" 
-               style="background-color: {{ day.air_quality_display.color }}; color: white;">
+          <div class="air-quality-bar {% if day.air_quality_display.rounded == 'True' %}rounded{% endif %}"
+               style="background-color: {{ day.air_quality_display.color }}; color: {{ day.air_quality_display.text_color }};">
             {{ day.air_quality_display.category }}
           </div>
         </div>
