@@ -846,13 +846,13 @@ class QWeather(BasePlugin):
             # Map category to color - optimized for E6 with standard colors
             color_map = {
                 '优': '#00CC00',      # Green - Excellent
-                '良': '#FFFF00',      # Pure yellow (E6 standard) - Good
+                '良': '#CC9900',      # Dark yellow/mustard - Good
                 '轻度污染': '#FF6600', # Orange - Light Pollution
                 '中度污染': '#FF0000', # Pure red (E6) - Moderate Pollution
                 '重度污染': '#9900CC', # Purple - Heavy Pollution
                 '严重污染': '#990000'  # Dark red - Severe Pollution
             }
-            color = color_map.get(category, '#FFFF00')
+            color = color_map.get(category, '#CC9900')
         else:
             # For future days, use weather-based estimation
             import random
@@ -881,7 +881,7 @@ class QWeather(BasePlugin):
                 color = "#00CC00"  # Green
             elif base_aqi <= 100:
                 category = "良"
-                color = "#FFFF00"  # Pure yellow (E6 standard)
+                color = "#CC9900"  # Dark yellow/mustard
             elif base_aqi <= 150:
                 category = "轻度污染"
                 color = "#FF6600"  # Orange
@@ -898,7 +898,7 @@ class QWeather(BasePlugin):
         return {
             "category": category,
             "color": color,
-            "text_color": "#000000" if category == "良" else "#FFFFFF",  # Black text for yellow (良), white for others
+            "text_color": "#FFFFFF",  # White text for all categories
             "rounded": "True"  # Use rounded corners to match forecast boxes
         }
 
