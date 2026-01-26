@@ -433,43 +433,79 @@
     });
 
     // Register plugin for drawing hourly weather icons
-    {% if plugin_settings.displayGraphIcons == "true" %}
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
+    const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
 
-    Chart.register({
-      id: 'chartIcons',
-      afterDatasetsDraw(chart) {
-        const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 22;
+    console.log('Graph icons enabled:', displayGraphIcons);
+    console.log('Icon step:', iconStep);
+    console.log('Weather icon paths:', weatherIconsPaths);
 
-        ctx.save();
+    // Preload all icons
+    const iconImages = {};
+    let iconsLoaded = 0;
+    const totalIcons = weatherIconsPaths.length;
 
-        chart.getDatasetMeta(0).data.forEach((point, i) => {
-          // Skip hours based on frequency setting
-          if (i % iconStep !== 0) return;
+    if (displayGraphIcons && weatherIconsPaths.length > 0) {
+      weatherIconsPaths.forEach((path, i) => {
+        if (!path) return;
+        const img = new Image();
+        img.onload = () => {
+          iconsLoaded++;
+          console.log(`Icon ${i} loaded: ${path} (${iconsLoaded}/${totalIcons})`);
+        };
+        img.onerror = () => {
+          console.error(`Failed to load icon ${i}: ${path}`);
+        };
+        img.src = path;
+        iconImages[i] = img;
+      });
 
-          // Skip if no icon path
-          if (!weatherIconsPaths[i]) return;
+      Chart.register({
+        id: 'chartIcons',
+        afterDatasetsDraw(chart) {
+          const { ctx, chartArea: { bottom }, scales: { x } } = chart;
+          const iconSize = 22;
 
-          const img = new Image();
-          img.src = weatherIconsPaths[i];
-          const xPos = point.x - (iconSize / 2);
-          const yPos = bottom + 25;  // Position below sunrise/sunset icons
+          ctx.save();
 
-          if (img.complete) {
-            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-          } else {
-            img.onload = () => {
-              ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-            };
+          const meta = chart.getDatasetMeta(0);
+          if (!meta || !meta.data) {
+            console.warn('No chart data available for drawing icons');
+            ctx.restore();
+            return;
           }
-        });
 
-        ctx.restore();
-      }
-    });
-    {% endif %}
+          let drawnCount = 0;
+          meta.data.forEach((point, i) => {
+            // Skip hours based on frequency setting
+            if (i % iconStep !== 0) return;
+
+            // Skip if no icon image
+            if (!iconImages[i]) {
+              console.warn(`No icon image for index ${i}`);
+              return;
+            }
+
+            const img = iconImages[i];
+            const xPos = point.x - (iconSize / 2);
+            const yPos = bottom + 25;  // Position below sunrise/sunset icons
+
+            // Only draw if image is fully loaded
+            if (img.complete && img.naturalWidth > 0) {
+              ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+              drawnCount++;
+            }
+          });
+
+          console.log(`Drew ${drawnCount} weather icons on chart`);
+          ctx.restore();
+        }
+      });
+      console.log('Chart icons plugin registered');
+    } else if (displayGraphIcons) {
+      console.warn('Graph icons enabled but no icon paths available');
+    }
 
     const chart = new Chart(ctx, {
       type: 'line',
