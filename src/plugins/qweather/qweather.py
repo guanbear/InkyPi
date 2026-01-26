@@ -651,7 +651,7 @@ class QWeather(BasePlugin):
         if merge_minutely:
             data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
         else:
-            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units, weather_data)
+            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units, weather_data, daily_forecast, display_style)
 
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
@@ -1001,10 +1001,38 @@ class QWeather(BasePlugin):
         
         return minutely_data
 
-    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units, current_weather=None):
+    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units, current_weather=None, daily_forecast=None, display_style="default"):
         """Parse hourly forecast data without minutely merging"""
         current_time = datetime.now(tz)
         hourly_data = []
+
+        # Build sunrise/sunset map from daily forecast
+        sun_map = {}
+        if daily_forecast:
+            for day in daily_forecast[:3]:  # Get sunrise/sunset for next 3 days
+                sunrise_str = day.get('sunrise')
+                sunset_str = day.get('sunset')
+                date_str = day.get('fxDate')
+
+                if sunrise_str and sunset_str and date_str:
+                    try:
+                        day_date = datetime.fromisoformat(date_str).date()
+
+                        # Parse sunrise/sunset times (format: "HH:MM")
+                        sunrise_time = datetime.strptime(sunrise_str, "%H:%M").replace(
+                            year=day_date.year, month=day_date.month, day=day_date.day
+                        )
+                        sunset_time = datetime.strptime(sunset_str, "%H:%M").replace(
+                            year=day_date.year, month=day_date.month, day=day_date.day
+                        )
+
+                        sunrise_dt = tz.localize(sunrise_time)
+                        sunset_dt = tz.localize(sunset_time)
+
+                        sun_map[day_date] = (sunrise_dt, sunset_dt)
+                        logger.info(f"Sun map for {day_date}: sunrise={sunrise_dt.strftime('%H:%M')}, sunset={sunset_dt.strftime('%H:%M')}")
+                    except Exception as e:
+                        logger.warning(f"Failed to parse sunrise/sunset for {date_str}: {e}")
 
         # Add current weather as the first data point if available
         if current_weather:
@@ -1012,11 +1040,24 @@ class QWeather(BasePlugin):
             # Use first hour's precipitation data as fallback for current
             first_hour_precip = 0
             first_hour_pop = 0
+            first_hour_icon = '100'  # Default icon
             if hourly_forecast and len(hourly_forecast) > 0:
                 first_hour_precip = float(hourly_forecast[0].get('precip', 0))
                 first_hour_pop = float(hourly_forecast[0].get('pop', 0)) / 100.0
+                first_hour_icon = hourly_forecast[0].get('icon', '100')
                 if units == "imperial":
                     first_hour_precip = first_hour_precip / 25.4
+
+            # Determine if current time is day or night
+            current_date = current_time.date()
+            is_day = '1'  # Default to day
+            if current_date in sun_map:
+                sunrise_dt, sunset_dt = sun_map[current_date]
+                is_day = '1' if sunrise_dt <= current_time < sunset_dt else '0'
+
+            # Map icon
+            current_icon = self.map_qweather_icon(current_weather.get('icon', first_hour_icon), display_style, is_day)
+            icon_path = self.get_icon_path(current_icon, display_style)
 
             current_item = {
                 "time": self.format_time(current_time, time_format, hour_only=True),
@@ -1024,16 +1065,30 @@ class QWeather(BasePlugin):
                 "hour": current_time.hour,
                 "temperature": current_temp,
                 "precipitation": first_hour_pop,
-                "rain": round(first_hour_precip, 2)
+                "rain": round(first_hour_precip, 2),
+                "icon": icon_path
             }
             hourly_data.append(current_item)
-            logger.info(f"Current: {current_time.strftime('%H:%M')} temp={current_temp}°C")
+            logger.info(f"Current: {current_time.strftime('%H:%M')} temp={current_temp}°C icon={current_icon}")
 
         for hour in hourly_forecast:
             dt = datetime.fromisoformat(hour['fxTime']).replace(tzinfo=tz)
 
             if dt <= current_time:
                 continue
+
+            # Determine if this hour is day or night
+            hour_date = dt.date()
+            is_day = '1'  # Default to day
+            if hour_date in sun_map:
+                sunrise_dt, sunset_dt = sun_map[hour_date]
+                is_day = '1' if sunrise_dt <= dt < sunset_dt else '0'
+                logger.debug(f"Hour {dt.strftime('%H:%M')}: sunrise={sunrise_dt.strftime('%H:%M')}, sunset={sunset_dt.strftime('%H:%M')}, is_day={is_day}")
+
+            # Get and map icon
+            hour_icon_code = hour.get('icon', '100')
+            hour_icon = self.map_qweather_icon(hour_icon_code, display_style, is_day)
+            icon_path = self.get_icon_path(hour_icon, display_style)
 
             precip_prob = float(hour.get('pop', 0)) / 100.0
             precip_amount = float(hour.get('precip', 0))
@@ -1046,15 +1101,28 @@ class QWeather(BasePlugin):
                 "hour": dt.hour,
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
-                "rain": round(precip_amount, 2)
+                "rain": round(precip_amount, 2),
+                "icon": icon_path
             }
             hourly_data.append(hour_item)
-            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
+            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm icon={hour_icon} (code={hour_icon_code}, is_day={is_day})")
 
             if len(hourly_data) >= 24:
                 break
 
         return hourly_data[:24]
+
+    def get_icon_path(self, icon_name, display_style="default"):
+        """Get the full path for an icon based on display style"""
+        if display_style == "qweather":
+            svg_path = self.get_plugin_dir(f'icons/{icon_name}.svg')
+            if os.path.exists(svg_path):
+                return svg_path
+            else:
+                # Fallback to PNG
+                return self.get_plugin_dir(f'icons/{icon_name}.png')
+        else:
+            return self.get_plugin_dir(f'icons/{icon_name}.png')
 
     def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
         """Merge minutely precipitation into hourly data: keep hourly temperature, replace precipitation for covered hours"""

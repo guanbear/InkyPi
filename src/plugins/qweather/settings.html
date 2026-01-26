@@ -99,6 +99,19 @@
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="displayGraphIcons" name="displayGraphIcons" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span id="graphIconsLabel">Graph icons every</span>
+        <select id="graphIconStep" name="graphIconStep" class="form-input">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="4">4</option>
+            <option value="6">6</option>
+            <option value="12">12</option>
+        </select>
+        <span id="graphIconsHoursLabel">hours</span>
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
         <span id="rainLabel">Rain Amount</span>
     </div>
@@ -187,6 +200,8 @@
             refreshTimeLabel: 'Refresh Time',
             metricsLabel: 'Metrics',
             graphLabel: 'Weather Graph',
+            graphIconsLabel: 'Graph icons every',
+            graphIconsHoursLabel: 'hours',
             rainLabel: 'Rain Amount',
             mergeMinutelyDataLabel: 'Merge Minutely Precipitation',
             moonPhaseLabel: 'Moon Phase',
@@ -235,6 +250,8 @@
             refreshTimeLabel: '刷新时间',
             metricsLabel: '气象指标',
             graphLabel: '天气图表',
+            graphIconsLabel: '图表图标间隔',
+            graphIconsHoursLabel: '小时',
             rainLabel: '降水量',
             mergeMinutelyDataLabel: '合并分钟级降水数据',
             moonPhaseLabel: '月相',
@@ -277,6 +294,8 @@
         document.getElementById('refreshTimeLabel').textContent = t.refreshTimeLabel;
         document.getElementById('metricsLabel').textContent = t.metricsLabel;
         document.getElementById('graphLabel').textContent = t.graphLabel;
+        document.getElementById('graphIconsLabel').textContent = t.graphIconsLabel;
+        document.getElementById('graphIconsHoursLabel').textContent = t.graphIconsHoursLabel;
         document.getElementById('rainLabel').textContent = t.rainLabel;
         document.getElementById('mergeMinutelyDataLabel').textContent = t.mergeMinutelyDataLabel;
         document.getElementById('moonPhaseLabel').textContent = t.moonPhaseLabel;
@@ -612,6 +631,11 @@
                 document.getElementById('displayGraph').checked = pluginSettings.displayGraph === 'true' || pluginSettings.displayGraph === true;
                 document.getElementById('displayGraph').value = (pluginSettings.displayGraph !== undefined && pluginSettings.displayGraph !== null) ? pluginSettings.displayGraph : 'true';
 
+                document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons === 'true' || pluginSettings.displayGraphIcons === true;
+                document.getElementById('displayGraphIcons').value = (pluginSettings.displayGraphIcons !== undefined && pluginSettings.displayGraphIcons !== null) ? pluginSettings.displayGraphIcons : 'false';
+
+                document.getElementById('graphIconStep').value = pluginSettings.graphIconStep || '2';
+
                 document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
                 document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
 
@@ -655,6 +679,9 @@
                 document.getElementById('displayMetrics').value = "true";
                 document.getElementById('displayGraph').checked = true;
                 document.getElementById('displayGraph').value = "true";
+                document.getElementById('displayGraphIcons').checked = false;
+                document.getElementById('displayGraphIcons').value = "false";
+                document.getElementById('graphIconStep').value = "2";
                 document.getElementById('displayRain').checked = true;
                 document.getElementById('displayRain').value = "true";
                 document.getElementById('mergeMinutelyData').checked = false;

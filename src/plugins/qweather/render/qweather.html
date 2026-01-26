@@ -432,6 +432,45 @@
       }
     });
 
+    // Register plugin for drawing hourly weather icons
+    {% if plugin_settings.displayGraphIcons == "true" %}
+    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
+
+    Chart.register({
+      id: 'chartIcons',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { bottom }, scales: { x } } = chart;
+        const iconSize = 22;
+
+        ctx.save();
+
+        chart.getDatasetMeta(0).data.forEach((point, i) => {
+          // Skip hours based on frequency setting
+          if (i % iconStep !== 0) return;
+
+          // Skip if no icon path
+          if (!weatherIconsPaths[i]) return;
+
+          const img = new Image();
+          img.src = weatherIconsPaths[i];
+          const xPos = point.x - (iconSize / 2);
+          const yPos = bottom + 25;  // Position below sunrise/sunset icons
+
+          if (img.complete) {
+            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+          } else {
+            img.onload = () => {
+              ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+            };
+          }
+        });
+
+        ctx.restore();
+      }
+    });
+    {% endif %}
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
