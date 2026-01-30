@@ -369,8 +369,6 @@
     });
 
     // Register separate plugin for drawing sunrise/sunset icons
-    // DISABLED FOR TESTING
-    /*
     Chart.register({
       id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
@@ -434,9 +432,10 @@
         ctx.restore();
       }
     });
-    */
 
     // Register plugin for drawing hourly weather icons
+    // DISABLED: Causes Chart.js to crash in headless Chrome
+    /*
     const weatherIconsBase64 = [{% for hour in hourly_forecast %}{{ '"%s"' % hour.icon_base64 if hour.icon_base64 else '""' }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
@@ -487,6 +486,7 @@
       });
       console.log('Chart icons plugin registered with base64 data');
     }
+    */
 
     const chartInstance = new Chart(ctx, {
       type: 'line',
