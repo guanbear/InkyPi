@@ -741,6 +741,11 @@ class QWeather(BasePlugin):
         for idx, day in enumerate(daily_forecast):
             dt = datetime.fromisoformat(day['fxDate']).replace(tzinfo=tz)
 
+            # Skip dates before today
+            if dt.date() < today:
+                logger.debug(f"Skipping past date: {dt.date()}")
+                continue
+
             # For today, use iconNight if current time is night, otherwise use iconDay
             # For other days, always use iconDay
             if dt.date() == today and current_is_day == "0":
