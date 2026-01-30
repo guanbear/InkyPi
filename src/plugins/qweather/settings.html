@@ -569,8 +569,11 @@
         // Function to load settings with default location
         function loadSettings(defaultLat, defaultLng) {
             if ( typeof loadPluginSettings !== 'undefined' && loadPluginSettings) {
-                document.getElementById('latitude').value = pluginSettings.latitude || defaultLat;
-                document.getElementById('longitude').value = pluginSettings.longitude || defaultLng;
+                // 优先使用 default_location，这样"设为默认"才有意义
+                // 如果有 default_location 且不是北京东城默认坐标，优先使用它
+                const hasCustomDefault = defaultLat && defaultLat !== '39.9042';
+                document.getElementById('latitude').value = hasCustomDefault ? defaultLat : (pluginSettings.latitude || defaultLat);
+                document.getElementById('longitude').value = hasCustomDefault ? defaultLng : (pluginSettings.longitude || defaultLng);
                 document.getElementById('units').value = pluginSettings.units || 'metric';
                 document.getElementById('language').value = pluginSettings.language || 'zh';
                 document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
