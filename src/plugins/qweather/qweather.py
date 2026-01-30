@@ -604,7 +604,7 @@ class QWeather(BasePlugin):
             # Transition to day mode 30 minutes before sunrise (sky starts getting brighter)
             sunrise_transition = sunrise_dt - timedelta(minutes=30)
             is_day = '1' if sunrise_transition <= now < sunset_dt else '0'
-            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunrise transition: {sunrise_transition}, Sunset: {sunset_dt}, is_day: {is_day}")
+            logger.debug(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunrise transition: {sunrise_transition}, Sunset: {sunset_dt}, is_day: {is_day}")
 
         current_icon = self.map_qweather_icon(weather_data.get('icon', '100'), display_style, is_day)
         current_temp = float(weather_data.get('temp', 0))
@@ -1185,7 +1185,7 @@ class QWeather(BasePlugin):
                 day=now.day
             )
             sunrise_dt = tz.localize(naive_sunrise)
-            logger.info(f"Sunrise time: {sunrise_dt}")
+            logger.debug(f"Sunrise time: {sunrise_dt}")
             data_points.append({
                 "label": LABELS[language]["sunrise"],
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
@@ -1201,7 +1201,7 @@ class QWeather(BasePlugin):
                 day=now.day
             )
             sunset_dt = tz.localize(naive_sunset)
-            logger.info(f"Sunset time: {sunset_dt}")
+            logger.debug(f"Sunset time: {sunset_dt}")
             data_points.append({
                 "label": LABELS[language]["sunset"],
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
@@ -1342,7 +1342,7 @@ class QWeather(BasePlugin):
 
         if sunrise_dt and sunset_dt:
             now = datetime.now(tz)
-            logger.info(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}")
+            logger.debug(f"Current time: {now}, Sunrise: {sunrise_dt}, Sunset: {sunset_dt}")
         else:
             logger.info(f"Missing sunrise/sunset times")
 
@@ -1358,7 +1358,7 @@ class QWeather(BasePlugin):
                 # Transition to day mode 30 minutes before sunrise (sky starts getting brighter)
                 sunrise_transition = sunrise_dt - timedelta(minutes=30)
                 result = now < sunrise_transition or now >= sunset_dt
-                logger.info(f"Auto theme result: {result} (current time: {now}, sunrise transition: {sunrise_transition}, sunset: {sunset_dt})")
+                logger.debug(f"Auto theme result: {result} (current time: {now}, sunrise transition: {sunrise_transition}, sunset: {sunset_dt})")
                 return result
             logger.warning("Auto theme mode but no sunrise/sunset data, defaulting to light")
             return False
