@@ -584,7 +584,12 @@
                 if (index === values.length - 1) {
                   // Calculate actual rain amount from mapped height (using factor of 8)
                   const actualRain = Math.pow(maxRainHeight / 8, 2);
-                  return actualRain.toFixed(1) + unit;
+                  // Only show unit if value is significant (>0.1)
+                  if (actualRain > 0.1) {
+                    return actualRain.toFixed(1) + unit;
+                  } else {
+                    return "0" + unit;
+                  }
                 }
                 else if (index === 0) return "0" + unit;
                 else return '';

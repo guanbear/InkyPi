@@ -64,23 +64,6 @@
 </div>
 
 <div class="form-group">
-    <label class="form-label" id="debugLabel">🐛 Debug Weather Alert</label>
-    <div class="form-group">
-        <input type="text" id="mockAlertHeadline" name="mockAlertHeadline" class="form-input" placeholder="Alert headline (leave empty for real alerts)" />
-    </div>
-    <div class="form-group">
-        <span id="severityLabel">Severity:</span>
-        <select id="mockAlertSeverity" name="mockAlertSeverity" class="form-input">
-            <option value="">None (Use Real)</option>
-            <option value="minor">Minor</option>
-            <option value="moderate">Moderate</option>
-            <option value="severe">Severe</option>
-            <option value="extreme">Extreme</option>
-        </select>
-    </div>
-</div>
-
-<div class="form-group">
     <label for="displayMetrics" class="form-label" id="displayLabel">👁️ Display Options</label>
 
     <div class="form-group">
@@ -101,16 +84,6 @@
     <div class="form-group">
         <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
         <span id="rainLabel">Rain Amount</span>
-    </div>
-
-    <div class="form-group">
-        <input type="checkbox" id="displayGraphIcons" name="displayGraphIcons" onclick="this.value=this.checked ? 'true' : 'false';">
-        <span id="graphIconsLabel">Hourly Weather Icons</span>
-    </div>
-
-    <div class="form-group">
-        <label for="graphIconStep" id="graphIconStepLabel">Icon Frequency (hours):</label>
-        <input type="number" id="graphIconStep" name="graphIconStep" min="1" max="6" value="2">
     </div>
 
     <div class="form-group">
@@ -280,9 +253,6 @@
         document.getElementById('displayStyleLabel').textContent = t.displayStyleLabel;
         document.getElementById('titleLabel').textContent = t.titleLabel;
         document.getElementById('customTitle').placeholder = t.titlePlaceholder;
-        document.getElementById('debugLabel').textContent = t.debugLabel;
-        document.getElementById('mockAlertHeadline').placeholder = t.alertHeadlinePlaceholder;
-        document.getElementById('severityLabel').textContent = t.severityLabel;
         document.getElementById('displayLabel').textContent = t.displayLabel;
         document.getElementById('refreshTimeLabel').textContent = t.refreshTimeLabel;
         document.getElementById('metricsLabel').textContent = t.metricsLabel;
@@ -310,15 +280,6 @@
         styleOptions[0].textContent = t.styleDefault;
         styleOptions[1].textContent = t.styleNothing;
         styleOptions[2].textContent = t.styleQweather;
-
-        // Update severity options
-        const severityOptions = document.querySelectorAll('#mockAlertSeverity option');
-        severityOptions[0].textContent = t.severityNone;
-        severityOptions[1].textContent = t.severityMinor;
-        severityOptions[2].textContent = t.severityModerate;
-        severityOptions[3].textContent = t.severitySevere;
-        document.getElementById('searchResults').style.display = 'none';
-        severityOptions[4].textContent = t.severityExtreme;
     }
 
     function toggleAirQualityOption() {
@@ -606,8 +567,24 @@
         console.log('Loading plugin settings...');
         try {
             if ( typeof loadPluginSettings !== 'undefined' && loadPluginSettings) {
-                document.getElementById('latitude').value = pluginSettings.latitude || '39.9042';
-                document.getElementById('longitude').value = pluginSettings.longitude || '116.4074';
+                // Try to get default location first
+                let defaultLat = '39.9042';  // Beijing Dongcheng fallback
+                let defaultLng = '116.4074';
+
+                try {
+                    const defaultResponse = await fetch('/api/device/config');
+                    const deviceConfig = await defaultResponse.json();
+                    if (deviceConfig.default_location) {
+                        defaultLat = deviceConfig.default_location.latitude.toString();
+                        defaultLng = deviceConfig.default_location.longitude.toString();
+                        console.log('Loaded default location:', defaultLat, defaultLng);
+                    }
+                } catch (e) {
+                    console.log('No default location set, using Beijing coordinates');
+                }
+
+                document.getElementById('latitude').value = pluginSettings.latitude || defaultLat;
+                document.getElementById('longitude').value = pluginSettings.longitude || defaultLng;
                 document.getElementById('units').value = pluginSettings.units || 'metric';
                 document.getElementById('language').value = pluginSettings.language || 'zh';
                 document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
@@ -624,11 +601,6 @@
 
                 document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
                 document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
-
-                document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons === 'true' || pluginSettings.displayGraphIcons === true;
-                document.getElementById('displayGraphIcons').value = (pluginSettings.displayGraphIcons !== undefined && pluginSettings.displayGraphIcons !== null) ? pluginSettings.displayGraphIcons : 'true';
-
-                document.getElementById('graphIconStep').value = pluginSettings.graphIconStep || '2';
 
                 document.getElementById('mergeMinutelyData').checked = pluginSettings.mergeMinutelyData === 'true' || pluginSettings.mergeMinutelyData === true;
                 document.getElementById('mergeMinutelyData').value = (pluginSettings.mergeMinutelyData !== undefined && pluginSettings.mergeMinutelyData !== null) ? pluginSettings.mergeMinutelyData : 'false';
@@ -648,9 +620,6 @@
                 document.getElementById('temperatureBars').value = (pluginSettings.temperatureBars !== undefined && pluginSettings.temperatureBars !== null) ? pluginSettings.temperatureBars : 'true';
 
                 document.getElementById('customTitle').value = pluginSettings.customTitle || '';
-
-                document.getElementById('mockAlertHeadline').value = pluginSettings.mockAlertHeadline || '';
-                document.getElementById('mockAlertSeverity').value = pluginSettings.mockAlertSeverity || '';
 
                 // Update language UI - default to Chinese if no saved setting
                 const savedLang = pluginSettings.language || 'zh';
@@ -672,9 +641,6 @@
                 document.getElementById('displayGraph').value = "true";
                 document.getElementById('displayRain').checked = true;
                 document.getElementById('displayRain').value = "true";
-                document.getElementById('displayGraphIcons').checked = true;
-                document.getElementById('displayGraphIcons').value = "true";
-                document.getElementById('graphIconStep').value = "2";
                 document.getElementById('mergeMinutelyData').checked = false;
                 document.getElementById('mergeMinutelyData').value = "false";
                 document.getElementById('displayForecast').checked = true;
@@ -687,9 +653,6 @@
                 document.getElementById('temperatureBars').checked = true;
                 document.getElementById('temperatureBars').value = "true";
                 document.getElementById('customTitle').value = '';
-
-                document.getElementById('mockAlertHeadline').value = '';
-                document.getElementById('mockAlertSeverity').value = '';
 
                 // Initialize with Chinese
                 updateLanguage('zh');

@@ -26,6 +26,17 @@ except ImportError:
 logger = logging.getLogger(__name__)
 settings_bp = Blueprint("settings", __name__)
 
+@settings_bp.route('/api/device/config', methods=['GET'])
+def get_device_config():
+    """Get device configuration including default location."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    try:
+        config = device_config.get_all_config()
+        return jsonify(config)
+    except Exception as e:
+        logger.error(f"Error getting device config: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @settings_bp.route('/settings')
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
