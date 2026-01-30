@@ -305,6 +305,7 @@
     }
 
     // Register plugin to create gradient dynamically
+    /*
     Chart.register({
       id: 'temperatureGradient',
       afterDatasetsDraw(chart) {
@@ -367,8 +368,10 @@
         ctx.restore();
       }
     });
+    */
 
     // Register separate plugin for drawing sunrise/sunset icons
+    /*
     Chart.register({
       id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
@@ -432,8 +435,10 @@
         ctx.restore();
       }
     });
+    */
 
     // Register plugin for drawing hourly weather icons
+    /*
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
@@ -513,6 +518,7 @@
     } else if (displayGraphIcons) {
       console.warn('Graph icons enabled but no icon paths available');
     }
+    */
 
     chartInstance = new Chart(ctx, {
       type: 'line',
