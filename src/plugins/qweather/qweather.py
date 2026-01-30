@@ -649,9 +649,9 @@ class QWeather(BasePlugin):
 
         merge_minutely = settings.get("mergeMinutelyData", "false").lower() == "true"
         if merge_minutely:
-            data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units)
+            data['hourly_forecast'] = self.merge_minutely_and_hourly(minutely_forecast, hourly_forecast, tz, time_format, units, display_style)
         else:
-            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units, weather_data)
+            data['hourly_forecast'] = self.parse_hourly_forecast(hourly_forecast, tz, time_format, units, weather_data, display_style)
 
         data['weather_alerts'] = self.parse_weather_alerts(weather_alerts, language)
 
@@ -1001,7 +1001,7 @@ class QWeather(BasePlugin):
         
         return minutely_data
 
-    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units, current_weather=None):
+    def parse_hourly_forecast(self, hourly_forecast, tz, time_format, units, current_weather=None, display_style="default"):
         """Parse hourly forecast data without minutely merging"""
         current_time = datetime.now(tz)
         hourly_data = []
@@ -1012,6 +1012,7 @@ class QWeather(BasePlugin):
             # Use first hour's precipitation data as fallback for current
             first_hour_precip = 0
             first_hour_pop = 0
+            current_icon_code = current_weather.get('icon', '100')
             if hourly_forecast and len(hourly_forecast) > 0:
                 first_hour_precip = float(hourly_forecast[0].get('precip', 0))
                 first_hour_pop = float(hourly_forecast[0].get('pop', 0)) / 100.0
@@ -1024,7 +1025,8 @@ class QWeather(BasePlugin):
                 "hour": current_time.hour,
                 "temperature": current_temp,
                 "precipitation": first_hour_pop,
-                "rain": round(first_hour_precip, 2)
+                "rain": round(first_hour_precip, 2),
+                "icon": self.get_plugin_dir(f"icons/{self.map_qweather_icon(current_icon_code, display_style, '1')}.png")
             }
             hourly_data.append(current_item)
             logger.info(f"Current: {current_time.strftime('%H:%M')} temp={current_temp}°C")
@@ -1040,23 +1042,29 @@ class QWeather(BasePlugin):
             if units == "imperial":
                 precip_amount = precip_amount / 25.4
 
+            # Get weather icon
+            icon_code = hour.get('icon', '100')
+            is_day = '1' if 6 <= dt.hour < 18 else '0'  # Simple day/night detection
+            icon_path = self.get_plugin_dir(f"icons/{self.map_qweather_icon(icon_code, display_style, is_day)}.png")
+
             hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "time_full": dt.strftime("%H:%M"),
                 "hour": dt.hour,
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
-                "rain": round(precip_amount, 2)
+                "rain": round(precip_amount, 2),
+                "icon": icon_path
             }
             hourly_data.append(hour_item)
-            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
+            logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm icon={icon_code}")
 
             if len(hourly_data) >= 24:
                 break
 
         return hourly_data[:24]
 
-    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units):
+    def merge_minutely_and_hourly(self, minutely_forecast, hourly_forecast, tz, time_format, units, display_style="default"):
         """Merge minutely precipitation into hourly data: keep hourly temperature, replace precipitation for covered hours"""
         current_time = datetime.now(tz)
 
@@ -1114,16 +1122,22 @@ class QWeather(BasePlugin):
                 if units == "imperial":
                     precip_amount = precip_amount / 25.4
 
+            # Get weather icon
+            icon_code = hour.get('icon', '100')
+            is_day = '1' if 6 <= dt.hour < 18 else '0'  # Simple day/night detection
+            icon_path = self.get_plugin_dir(f"icons/{self.map_qweather_icon(icon_code, display_style, is_day)}.png")
+
             hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "time_full": dt.strftime("%H:%M"),
                 "hour": dt.hour,
                 "temperature": temperature,
                 "precipitation": precip_prob,
-                "rain": round(precip_amount, 2)
+                "rain": round(precip_amount, 2),
+                "icon": icon_path
             }
             merged.append(hour_item)
-            logger.info(f"Merged: {dt.strftime('%H:%M')} temp={temperature}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm")
+            logger.info(f"Merged: {dt.strftime('%H:%M')} temp={temperature}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm icon={icon_code}")
 
             if len(merged) >= 24:
                 break
