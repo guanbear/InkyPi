@@ -481,6 +481,13 @@
             const xPos = point.x - (iconSize / 2);
             console.log('Attempting to draw icon', i, 'at xPos:', xPos, 'complete:', img.complete, 'width:', img.width, 'height:', img.height);
 
+            // Only draw if image is loaded (same check as sunrise/sunset)
+            if (!img.complete) {
+              console.log('Icon', i, 'not loaded yet, skipping');
+              skippedCount++;
+              return;
+            }
+
             try {
               ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
               drawnCount++;
