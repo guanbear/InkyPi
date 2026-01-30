@@ -104,6 +104,16 @@
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="displayGraphIcons" name="displayGraphIcons" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span id="graphIconsLabel">Hourly Weather Icons</span>
+    </div>
+
+    <div class="form-group">
+        <label for="graphIconStep" id="graphIconStepLabel">Icon Frequency (hours):</label>
+        <input type="number" id="graphIconStep" name="graphIconStep" min="1" max="6" value="2">
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="mergeMinutelyData" name="mergeMinutelyData" onclick="this.value=this.checked ? 'true' : 'false';">
         <span id="mergeMinutelyDataLabel">Merge Minutely Precipitation</span>
     </div>
@@ -615,6 +625,11 @@
                 document.getElementById('displayRain').checked = pluginSettings.displayRain === 'true' || pluginSettings.displayRain === true;
                 document.getElementById('displayRain').value = (pluginSettings.displayRain !== undefined && pluginSettings.displayRain !== null) ? pluginSettings.displayRain : 'true';
 
+                document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons === 'true' || pluginSettings.displayGraphIcons === true;
+                document.getElementById('displayGraphIcons').value = (pluginSettings.displayGraphIcons !== undefined && pluginSettings.displayGraphIcons !== null) ? pluginSettings.displayGraphIcons : 'true';
+
+                document.getElementById('graphIconStep').value = pluginSettings.graphIconStep || '2';
+
                 document.getElementById('mergeMinutelyData').checked = pluginSettings.mergeMinutelyData === 'true' || pluginSettings.mergeMinutelyData === true;
                 document.getElementById('mergeMinutelyData').value = (pluginSettings.mergeMinutelyData !== undefined && pluginSettings.mergeMinutelyData !== null) ? pluginSettings.mergeMinutelyData : 'false';
 
@@ -657,6 +672,9 @@
                 document.getElementById('displayGraph').value = "true";
                 document.getElementById('displayRain').checked = true;
                 document.getElementById('displayRain').value = "true";
+                document.getElementById('displayGraphIcons').checked = true;
+                document.getElementById('displayGraphIcons').value = "true";
+                document.getElementById('graphIconStep').value = "2";
                 document.getElementById('mergeMinutelyData').checked = false;
                 document.getElementById('mergeMinutelyData').value = "false";
                 document.getElementById('displayForecast').checked = true;

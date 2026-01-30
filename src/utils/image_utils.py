@@ -91,6 +91,13 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
+        # Debug: save HTML for inspection
+        import shutil
+        try:
+            shutil.copy(html_file_path, "/tmp/last_inkypi_render.html")
+        except:
+            pass
+
         image = take_screenshot(html_file_path, dimensions, timeout_ms)
 
         # Remove html file

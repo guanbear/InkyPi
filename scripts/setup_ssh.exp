@@ -1,0 +1,26 @@
+#!/usr/bin/expect -f
+# Setup SSH key authentication
+
+set timeout 30
+set password "Gzc@bear123"
+set server "root@guanzhicheng.com"
+
+# Read the public key
+set fp [open "$env(HOME)/.ssh/id_rsa.pub" r]
+set pubkey [read $fp]
+close $fp
+
+spawn ssh $server "mkdir -p ~/.ssh && chmod 700 ~/.ssh"
+expect {
+    "yes/no" { send "yes\r"; exp_continue }
+    "password:" { send "$password\r" }
+}
+expect eof
+
+spawn ssh $server "echo '$pubkey' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys"
+expect {
+    "password:" { send "$password\r" }
+}
+expect eof
+
+puts "\nSSH key setup complete!"
