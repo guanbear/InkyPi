@@ -187,11 +187,6 @@
     sunsetImg.onload = () => { iconsLoaded++; };
     sunriseImg.src = sunriseIcon;
     sunsetImg.src = sunsetIcon;
-
-    // Icon paths for hourly weather icons (used in chartIcons plugin)
-    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
-    const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
-
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
@@ -373,17 +368,16 @@
       }
     });
 
-    // Register separate plugin for drawing sunrise/sunset icons AND hourly weather icons (merged)
+    // Register separate plugin for drawing sunrise/sunset icons
     Chart.register({
-      id: 'sunriseSunsetAndHourlyIcons',
+      id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
         // Draw icons after datasets but before axis labels
         const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
 
-        ctx.save();
+        if (!sunriseTime && !sunsetTime) return;
 
-        // Track which indices have sunrise/sunset to avoid overlap
-        const reservedIndices = new Set();
+        ctx.save();
 
         // Draw sunrise icon
         if (sunriseTime) {
@@ -399,10 +393,9 @@
           });
 
           if (sunriseIndex !== -1) {
-            reservedIndices.add(sunriseIndex);
             const xPos = x.getPixelForValue(sunriseIndex);
-            const iconSize = 18; // Uniform size
-            const iconY = bottom + 5; // Unified position
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
 
             // Draw icon
             if (sunriseImg.complete && sunriseImg.naturalWidth > 0) {
@@ -425,10 +418,9 @@
           });
 
           if (sunsetIndex !== -1) {
-            reservedIndices.add(sunsetIndex);
             const xPos = x.getPixelForValue(sunsetIndex);
-            const iconSize = 18; // Uniform size
-            const iconY = bottom + 5; // Unified position
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
 
             // Draw icon
             if (sunsetImg.complete && sunsetImg.naturalWidth > 0) {
@@ -437,32 +429,43 @@
           }
         }
 
-        // Draw hourly weather icons (if enabled)
-        {% if plugin_settings.displayGraphIcons == "true" %}
-        if (weatherIconsPaths && weatherIconsPaths.length > 0) {
-          const iconSize = 18; // Match sunrise/sunset size
-          const iconY = bottom + 5; // Same position
+        ctx.restore();
+      }
+    });
 
-          chart.getDatasetMeta(0).data.forEach((point, i) => {
-            // Skip if not at iconStep interval
-            if (i % iconStep !== 0) return;
+    // Precipitation amount annotation plugin (from official weather plugin)
+    Chart.register({
+      id: 'annotationRain',
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx } = chart;
+        const rainData = pluginOptions.precipitationData || [];
+        const meta = chart.getDatasetMeta(1);
 
-            // Skip if this position has sunrise/sunset icon
-            if (reservedIndices.has(i)) return;
+        ctx.save();
+        ctx.textAlign = 'center';
 
-            // Create NEW Image object each time (official way)
-            const img = new Image();
-            img.src = weatherIconsPaths[i];
-            const xPos = point.x - (iconSize / 2);
+        meta.data.forEach((bar, i) => {
+          const rainAmount = rainData[i];
+          if (rainAmount && rainAmount > threshold) {
+            const x = bar.x;
+            const y = bar.y;
+            const base = bar.base;
+            const height = base - y;
 
-            if (img.complete) {
-              ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+            let textY, unitY;
+
+            if (height < 25) {
+              textY = y - 10;
+              unitY = y - 3;
             } else {
-              img.onload = () => ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+              textY = y + 13;
+              unitY = y + 20;
             }
-          });
-        }
-        {% endif %}
+            ctx.fillStyle = textColor;
+            ctx.fillText(rainAmount.toFixed(2), x, textY);
+            ctx.fillText(unit, x, unitY);
+          }
+        });
 
         ctx.restore();
       }
@@ -592,7 +595,8 @@
           }
         },
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          annotationRain: { precipitationData: rain }
         },
         elements: {
           line: {
