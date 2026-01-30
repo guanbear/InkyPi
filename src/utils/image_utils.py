@@ -130,7 +130,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-dev-shm-usage",
             "--hide-scrollbars",
             "--no-sandbox",
-            "--timeout=30000",  # Increased from 10000 to 30000 (30 seconds) to allow image loading
+            "--virtual-time-budget=15000",  # Force Chrome to wait 15s for all async operations
             "--enable-logging",
             "--v=1"
         ]
