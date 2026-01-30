@@ -127,10 +127,10 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             f"--screenshot={img_file_path}",
             f"--window-size={dimensions[0]},{dimensions[1]}",
             f"--force-device-scale-factor=1",
-            "--virtual-time-budget=6000",
             "--disable-dev-shm-usage",
             "--hide-scrollbars",
-            "--no-sandbox"
+            "--no-sandbox",
+            "--timeout=10000"
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
