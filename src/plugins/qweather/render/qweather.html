@@ -200,6 +200,20 @@
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
 
+    // Preload hourly weather icons to ensure they're loaded before Chart renders
+    const weatherIcons = [];
+    let iconsLoadedCount = 0;
+    const totalWeatherIcons = Math.ceil(weatherIconsPaths.length / iconStep);
+
+    weatherIconsPaths.forEach((path, i) => {
+      if (i % iconStep === 0 && path) {
+        const img = new Image();
+        img.onload = () => { iconsLoadedCount++; };
+        img.src = path;
+        weatherIcons[i] = img;
+      }
+    });
+
     // Helper function to parse HH:MM to minutes
     function parseTime(timeStr) {
       const [h, m] = timeStr.split(':').map(Number);
@@ -450,12 +464,11 @@
           // Skip if not at iconStep interval
           if (i % iconStep !== 0) return;
 
-          // Skip if no icon path
-          if (!weatherIconsPaths[i]) return;
+          // Skip if no preloaded icon
+          if (!weatherIcons[i]) return;
 
-          // Create new Image object for each icon (official weather plugin approach)
-          const img = new Image();
-          img.src = weatherIconsPaths[i];
+          // Use preloaded Image object
+          const img = weatherIcons[i];
           const xPos = point.x - (iconSize / 2);
           const yPos = bottom + 25;
 
