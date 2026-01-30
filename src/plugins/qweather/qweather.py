@@ -1045,7 +1045,18 @@ class QWeather(BasePlugin):
             # Get weather icon
             icon_code = hour.get('icon', '100')
             is_day = '1' if 6 <= dt.hour < 18 else '0'  # Simple day/night detection
-            icon_path = self.get_plugin_dir(f"icons/{self.map_qweather_icon(icon_code, display_style, is_day)}.png")
+            weather_icon = self.map_qweather_icon(icon_code, display_style, is_day)
+
+            # Handle icon for qweather style - use SVG, otherwise PNG
+            if display_style == "qweather":
+                svg_path = self.get_plugin_dir(f'icons/{weather_icon}.svg')
+                if os.path.exists(svg_path):
+                    icon_path = svg_path
+                else:
+                    # Fallback to PNG if SVG doesn't exist
+                    icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+            else:
+                icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
@@ -1125,7 +1136,18 @@ class QWeather(BasePlugin):
             # Get weather icon
             icon_code = hour.get('icon', '100')
             is_day = '1' if 6 <= dt.hour < 18 else '0'  # Simple day/night detection
-            icon_path = self.get_plugin_dir(f"icons/{self.map_qweather_icon(icon_code, display_style, is_day)}.png")
+            weather_icon = self.map_qweather_icon(icon_code, display_style, is_day)
+
+            # Handle icon for qweather style - use SVG, otherwise PNG
+            if display_style == "qweather":
+                svg_path = self.get_plugin_dir(f'icons/{weather_icon}.svg')
+                if os.path.exists(svg_path):
+                    icon_path = svg_path
+                else:
+                    # Fallback to PNG if SVG doesn't exist
+                    icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+            else:
+                icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             hour_item = {
                 "time": self.format_time(dt, time_format, hour_only=True),
