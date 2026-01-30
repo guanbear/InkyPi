@@ -188,20 +188,9 @@
     sunriseImg.src = sunriseIcon;
     sunsetImg.src = sunsetIcon;
 
-    // Preload hourly weather icons early (same timing as sunrise/sunset)
+    // Icon paths for hourly weather icons (used in chartIcons plugin)
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
-    const weatherIcons = [];
-    let iconsLoadedCount = 0;
-
-    weatherIconsPaths.forEach((path, i) => {
-      if (i % iconStep === 0 && path) {
-        const img = new Image();
-        img.onload = () => { iconsLoadedCount++; };
-        img.src = path;
-        weatherIcons[i] = img;
-      }
-    });
 
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
@@ -449,7 +438,7 @@
       }
     });
 
-    // Hourly weather icons plugin (based on official weather plugin)
+    // Hourly weather icons plugin (exact copy from official weather plugin)
     {% if plugin_settings.displayGraphIcons == "true" %}
     Chart.register({
       id: 'chartIcons',
@@ -462,15 +451,12 @@
           // Skip if not at iconStep interval
           if (i % iconStep !== 0) return;
 
-          // Skip if no preloaded icon
-          if (!weatherIcons[i]) return;
-
-          // Use preloaded Image object
-          const img = weatherIcons[i];
+          // Create NEW Image object each time (official way)
+          const img = new Image();
+          img.src = weatherIconsPaths[i];
           const xPos = point.x - (iconSize / 2);
           const yPos = bottom + 25;
 
-          // Draw immediately if loaded, otherwise set onload callback
           if (img.complete) {
             ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
           } else {
