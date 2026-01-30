@@ -368,117 +368,64 @@
       }
     });
 
-    // Register unified plugin for sunrise/sunset + hourly weather icons
-    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
-    const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
-    const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
-
-    // Sunrise/sunset data
-    const sunriseTime = {% if sunrise_time %}"{{ sunrise_time }}"{% else %}null{% endif %};
-    const sunsetTime = {% if sunset_time %}"{{ sunset_time }}"{% else %}null{% endif %};
-    const sunriseIcon = "{{ sunrise_icon }}";
-    const sunsetIcon = "{{ sunset_icon }}";
-    const timeFull = [{% for hour in hourly_forecast %}"{{ hour.time_full }}"{% if not loop.last %}, {% endif %}{% endfor %}];
-
-    // Preload sunrise/sunset icons
-    const sunriseImg = new Image();
-    const sunsetImg = new Image();
-    sunriseImg.src = sunriseIcon;
-    sunsetImg.src = sunsetIcon;
-    console.log('Sunrise/sunset icons created, sunrise complete:', sunriseImg.complete, 'sunset complete:', sunsetImg.complete);
-
+    // Register separate plugin for drawing sunrise/sunset icons
     Chart.register({
-      id: 'unifiedIcons',
+      id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
-        const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 20;
-        const iconY = bottom + 25;  // Single height for all icons
+        // Draw icons after datasets but before axis labels
+        const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+
+        if (!sunriseTime && !sunsetTime) return;
 
         ctx.save();
 
-        const meta = chart.getDatasetMeta(0);
-        if (!meta || !meta.data) {
-          ctx.restore();
-          return;
-        }
-
-        // Helper function to parse HH:MM to minutes
-        function parseTime(timeStr) {
-          const [h, m] = timeStr.split(':').map(Number);
-          return h * 60 + m;
-        }
-
-        // Find sunrise/sunset positions
-        let sunriseIndex = -1;
-        let sunsetIndex = -1;
-
+        // Draw sunrise icon
         if (sunriseTime) {
-          const sunriseMin = parseTime(sunriseTime);
+          // Find the closest time point to sunrise
+          let sunriseIndex = -1;
           let minDiff = Infinity;
           timeFull.forEach((t, i) => {
-            const diff = Math.abs(parseTime(t) - sunriseMin);
+            const diff = Math.abs(parseTime(t) - parseTime(sunriseTime));
             if (diff < minDiff) {
               minDiff = diff;
               sunriseIndex = i;
             }
           });
+
+          if (sunriseIndex !== -1) {
+            const xPos = x.getPixelForValue(sunriseIndex);
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
+
+            // Draw icon
+            if (sunriseImg.complete && sunriseImg.naturalWidth > 0) {
+              ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
+            }
+          }
         }
 
+        // Draw sunset icon
         if (sunsetTime) {
-          const sunsetMin = parseTime(sunsetTime);
+          // Find the closest time point to sunset
+          let sunsetIndex = -1;
           let minDiff = Infinity;
           timeFull.forEach((t, i) => {
-            const diff = Math.abs(parseTime(t) - sunsetMin);
+            const diff = Math.abs(parseTime(t) - parseTime(sunsetTime));
             if (diff < minDiff) {
               minDiff = diff;
               sunsetIndex = i;
             }
           });
-        }
 
-        // Draw hourly weather icons (skip sunrise/sunset positions) - Use official weather plugin approach
-        if (displayGraphIcons) {
-          meta.data.forEach((point, i) => {
-            // Skip if not at iconStep interval
-            if (i % iconStep !== 0) return;
+          if (sunsetIndex !== -1) {
+            const xPos = x.getPixelForValue(sunsetIndex);
+            const iconSize = 14;
+            const iconY = bottom + 5; // Position below the axis line
 
-            // Skip if conflicts with sunrise/sunset
-            if (i === sunriseIndex || i === sunsetIndex) return;
-
-            // Skip if no icon path
-            if (!weatherIconsPaths[i]) return;
-
-            // Create new Image object for each icon (official weather plugin approach)
-            const img = new Image();
-            img.src = weatherIconsPaths[i];
-            const xPos = point.x - (iconSize / 2);
-
-            // Draw immediately if loaded, otherwise set onload callback
-            if (img.complete) {
-              ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
-            } else {
-              img.onload = () => ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+            // Draw icon
+            if (sunsetImg.complete && sunsetImg.naturalWidth > 0) {
+              ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
             }
-          });
-        }
-
-        // Draw sunrise icon (overwrites weather icon if any)
-        if (sunriseIndex !== -1) {
-          const xPos = x.getPixelForValue(sunriseIndex);
-          if (sunriseImg.complete) {
-            ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
-          } else {
-            sunriseImg.onload = () => ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
-          }
-        }
-
-        // Draw sunset icon (overwrites weather icon if any)
-        if (sunsetIndex !== -1) {
-          const xPos = x.getPixelForValue(sunsetIndex);
-          if (sunsetImg.complete) {
-            ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
-          } else {
-            sunsetImg.onload = () => ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
           }
         }
 
