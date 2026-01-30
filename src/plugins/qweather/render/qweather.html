@@ -187,23 +187,12 @@
     sunsetImg.onload = () => { iconsLoaded++; };
     sunriseImg.src = sunriseIcon;
     sunsetImg.src = sunsetIcon;
-	const units = document.getElementById('units-container').dataset.units;
-	const isImperial = units === "imperial";
-	const unit = isImperial ? "in" : "mm";
-	const threshold = isImperial ? 0.0035 : 0.01;
 
-	// Text color based on theme
-	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') if plugin_settings.textColor else '#000000' }}"{% endif %};
-	console.log('Dark mode:', {% if dark_mode %}true{% else %}false{% endif %}, 'Text color:', textColor);
-
-    // Hourly weather icons data
+    // Preload hourly weather icons early (same timing as sunrise/sunset)
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
-
-    // Preload hourly weather icons to ensure they're loaded before Chart renders
     const weatherIcons = [];
     let iconsLoadedCount = 0;
-    const totalWeatherIcons = Math.ceil(weatherIconsPaths.length / iconStep);
 
     weatherIconsPaths.forEach((path, i) => {
       if (i % iconStep === 0 && path) {
@@ -213,6 +202,15 @@
         weatherIcons[i] = img;
       }
     });
+
+	const units = document.getElementById('units-container').dataset.units;
+	const isImperial = units === "imperial";
+	const unit = isImperial ? "in" : "mm";
+	const threshold = isImperial ? 0.0035 : 0.01;
+
+	// Text color based on theme
+	const textColor = {% if dark_mode %}"#FFFFFF"{% else %}"{{ plugin_settings.textColor|default('#000000') if plugin_settings.textColor else '#000000' }}"{% endif %};
+	console.log('Dark mode:', {% if dark_mode %}true{% else %}false{% endif %}, 'Text color:', textColor);
 
     // Helper function to parse HH:MM to minutes
     function parseTime(timeStr) {
