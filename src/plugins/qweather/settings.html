@@ -565,24 +565,10 @@
 
         // Load settings
         console.log('Loading plugin settings...');
-        try {
+
+        // Function to load settings with default location
+        function loadSettings(defaultLat, defaultLng) {
             if ( typeof loadPluginSettings !== 'undefined' && loadPluginSettings) {
-                // Try to get default location first
-                let defaultLat = '39.9042';  // Beijing Dongcheng fallback
-                let defaultLng = '116.4074';
-
-                try {
-                    const defaultResponse = await fetch('/api/device/config');
-                    const deviceConfig = await defaultResponse.json();
-                    if (deviceConfig.default_location) {
-                        defaultLat = deviceConfig.default_location.latitude.toString();
-                        defaultLng = deviceConfig.default_location.longitude.toString();
-                        console.log('Loaded default location:', defaultLat, defaultLng);
-                    }
-                } catch (e) {
-                    console.log('No default location set, using Beijing coordinates');
-                }
-
                 document.getElementById('latitude').value = pluginSettings.latitude || defaultLat;
                 document.getElementById('longitude').value = pluginSettings.longitude || defaultLng;
                 document.getElementById('units').value = pluginSettings.units || 'metric';
@@ -627,8 +613,8 @@
                 updateLanguage(savedLang);
             } else {
                 // Default settings for development mode
-                document.getElementById('latitude').value = '39.9042';
-                document.getElementById('longitude').value = '116.4074';
+                document.getElementById('latitude').value = defaultLat || '39.9042';
+                document.getElementById('longitude').value = defaultLng || '116.4074';
                 document.getElementById('units').value = "metric";
                 document.getElementById('language').value = "zh";
                 document.getElementById('themeMode').value = "auto";
@@ -657,8 +643,25 @@
                 // Initialize with Chinese
                 updateLanguage('zh');
             }
-        } catch (error) {
-            console.error('Error loading settings:', error);
         }
+
+        // Try to get default location first, then load settings
+        fetch('/api/device/config')
+            .then(response => response.json())
+            .then(deviceConfig => {
+                if (deviceConfig.default_location) {
+                    const defaultLat = deviceConfig.default_location.latitude.toString();
+                    const defaultLng = deviceConfig.default_location.longitude.toString();
+                    console.log('Loaded default location:', defaultLat, defaultLng);
+                    loadSettings(defaultLat, defaultLng);
+                } else {
+                    console.log('No default location set, using Beijing coordinates');
+                    loadSettings('39.9042', '116.4074');
+                }
+            })
+            .catch(error => {
+                console.log('Failed to fetch device config, using Beijing coordinates:', error);
+                loadSettings('39.9042', '116.4074');
+            });
     });
 </script>
