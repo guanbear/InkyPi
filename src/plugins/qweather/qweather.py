@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import requests
 import logging
+import base64
 import json
 from datetime import datetime, timezone, date, timedelta
 from astral import moon
@@ -734,6 +735,26 @@ class QWeather(BasePlugin):
             return icon_code + "n"
         return icon_code + "d"
 
+    def get_icon_base64(self, icon_path):
+        """Convert icon file to base64 data URL"""
+        try:
+            with open(icon_path, 'rb') as f:
+                icon_data = f.read()
+                base64_data = base64.b64encode(icon_data).decode('utf-8')
+                # Determine image type from file extension
+                if icon_path.endswith('.svg'):
+                    mime_type = 'image/svg+xml'
+                elif icon_path.endswith('.png'):
+                    mime_type = 'image/png'
+                elif icon_path.endswith('.jpg') or icon_path.endswith('.jpeg'):
+                    mime_type = 'image/jpeg'
+                else:
+                    mime_type = 'image/png'  # default
+                return f"data:{mime_type};base64,{base64_data}"
+        except Exception as e:
+            logger.error(f"Failed to convert icon to base64: {icon_path}, error: {e}")
+            return None
+
     def parse_forecast(self, daily_forecast, tz, language="zh", display_style="default", settings=None, air_quality=None, current_is_day="1"):
         forecast = []
         today = datetime.now(tz).date()
@@ -1026,7 +1047,8 @@ class QWeather(BasePlugin):
                 "temperature": current_temp,
                 "precipitation": first_hour_pop,
                 "rain": round(first_hour_precip, 2),
-                "icon": self.get_plugin_dir(f"icons/{self.map_qweather_icon(current_icon_code, display_style, '1')}.png")
+                "icon": self.get_plugin_dir(f"icons/{self.map_qweather_icon(current_icon_code, display_style, '1')}.png"),
+                "icon_base64": self.get_icon_base64(self.get_plugin_dir(f"icons/{self.map_qweather_icon(current_icon_code, display_style, '1')}.png"))
             }
             hourly_data.append(current_item)
             logger.info(f"Current: {current_time.strftime('%H:%M')} temp={current_temp}°C")
@@ -1054,7 +1076,8 @@ class QWeather(BasePlugin):
                 "temperature": int(float(hour.get('temp', 0))),
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2),
-                "icon": icon_path
+                "icon": icon_path,
+                "icon_base64": self.get_icon_base64(icon_path)
             }
             hourly_data.append(hour_item)
             logger.info(f"Hourly: {dt.strftime('%H:%M')} temp={hour_item['temperature']}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm icon={icon_code}")
@@ -1134,7 +1157,8 @@ class QWeather(BasePlugin):
                 "temperature": temperature,
                 "precipitation": precip_prob,
                 "rain": round(precip_amount, 2),
-                "icon": icon_path
+                "icon": icon_path,
+                "icon_base64": self.get_icon_base64(icon_path)
             }
             merged.append(hour_item)
             logger.info(f"Merged: {dt.strftime('%H:%M')} temp={temperature}°C pop={precip_prob*100:.0f}% rain={precip_amount:.2f}mm icon={icon_code}")

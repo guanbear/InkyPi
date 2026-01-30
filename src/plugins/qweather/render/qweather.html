@@ -434,15 +434,16 @@
     });
 
     // Register plugin for drawing hourly weather icons
-    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const weatherIconsBase64 = [{% for hour in hourly_forecast %}{{ '"%s"' % hour.icon_base64 if hour.icon_base64 else '""' }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
 
     console.log('Graph icons enabled:', displayGraphIcons);
     console.log('Icon step:', iconStep);
+    console.log('Base64 icons count:', weatherIconsBase64.length);
 
-    // Register plugin WITHOUT preloading - draw images directly
-    if (displayGraphIcons && weatherIconsPaths.length > 0) {
+    // Register plugin with base64 encoded images
+    if (displayGraphIcons && weatherIconsBase64.length > 0) {
       Chart.register({
         id: 'chartIcons',
         afterDatasetsDraw(chart) {
@@ -462,29 +463,26 @@
             // Skip hours based on frequency setting
             if (i % iconStep !== 0) return;
 
-            // Skip if no icon path
-            if (!weatherIconsPaths[i]) return;
+            // Skip if no base64 data
+            if (!weatherIconsBase64[i] || weatherIconsBase64[i] === "") return;
 
-            // Draw image directly - no preloading needed for local files
+            // Create image from base64 data - no loading needed!
             const img = new Image();
-            img.src = weatherIconsPaths[i];
+            img.src = weatherIconsBase64[i];
 
             const xPos = point.x - (iconSize / 2);
             const yPos = bottom + 25;  // Position below sunrise/sunset icons
 
-            try {
-              ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-              drawnCount++;
-            } catch (e) {
-              // Image not loaded yet, skip silently
-            }
+            // Base64 images are immediately available
+            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+            drawnCount++;
           });
 
           console.log(`Drew ${drawnCount} weather icons on chart`);
           ctx.restore();
         }
       });
-      console.log('Chart icons plugin registered');
+      console.log('Chart icons plugin registered with base64 data');
     }
 
     const chartInstance = new Chart(ctx, {
