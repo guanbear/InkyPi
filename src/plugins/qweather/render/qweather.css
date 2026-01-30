@@ -492,7 +492,7 @@ body {
 
 .chart-container {
   width: 100%;
-  height: 16dvh;
+  height: 20dvh;  /* Increased from 16dvh to accommodate hourly icons below sunrise/sunset */
 }
 
 .separator {
