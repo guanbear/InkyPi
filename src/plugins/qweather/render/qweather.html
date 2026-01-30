@@ -434,42 +434,15 @@
     });
 
     // Register plugin for drawing hourly weather icons
-    // DISABLED: This plugin causes Chart.js to fail rendering in headless Chrome
-    /*
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
 
     console.log('Graph icons enabled:', displayGraphIcons);
     console.log('Icon step:', iconStep);
-    console.log('Weather icon paths:', weatherIconsPaths);
 
-    // Preload all icons
-    const iconImages = {};
-    let iconsLoaded = 0;
-    const totalIcons = weatherIconsPaths.length;
-    let chartInstance = null;
-
+    // Register plugin WITHOUT preloading - draw images directly
     if (displayGraphIcons && weatherIconsPaths.length > 0) {
-      weatherIconsPaths.forEach((path, i) => {
-        if (!path) return;
-        const img = new Image();
-        img.onload = () => {
-          iconsLoaded++;
-          console.log(`Icon ${i} loaded: ${path} (${iconsLoaded}/${totalIcons})`);
-          // Redraw chart when all icons are loaded
-          if (iconsLoaded === totalIcons && chartInstance) {
-            console.log('All icons loaded, updating chart');
-            chartInstance.update();
-          }
-        };
-        img.onerror = () => {
-          console.error(`Failed to load icon ${i}: ${path}`);
-        };
-        img.src = path;
-        iconImages[i] = img;
-      });
-
       Chart.register({
         id: 'chartIcons',
         afterDatasetsDraw(chart) {
@@ -480,7 +453,6 @@
 
           const meta = chart.getDatasetMeta(0);
           if (!meta || !meta.data) {
-            console.warn('No chart data available for drawing icons');
             ctx.restore();
             return;
           }
@@ -490,20 +462,21 @@
             // Skip hours based on frequency setting
             if (i % iconStep !== 0) return;
 
-            // Skip if no icon image
-            if (!iconImages[i]) {
-              console.warn(`No icon image for index ${i}`);
-              return;
-            }
+            // Skip if no icon path
+            if (!weatherIconsPaths[i]) return;
 
-            const img = iconImages[i];
+            // Draw image directly - no preloading needed for local files
+            const img = new Image();
+            img.src = weatherIconsPaths[i];
+
             const xPos = point.x - (iconSize / 2);
             const yPos = bottom + 25;  // Position below sunrise/sunset icons
 
-            // Only draw if image is fully loaded
-            if (img.complete && img.naturalWidth > 0) {
+            try {
               ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
               drawnCount++;
+            } catch (e) {
+              // Image not loaded yet, skip silently
             }
           });
 
@@ -512,12 +485,9 @@
         }
       });
       console.log('Chart icons plugin registered');
-    } else if (displayGraphIcons) {
-      console.warn('Graph icons enabled but no icon paths available');
     }
-    */
 
-    chartInstance = new Chart(ctx, {
+    const chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
