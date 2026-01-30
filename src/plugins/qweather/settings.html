@@ -569,11 +569,10 @@
         // Function to load settings with default location
         function loadSettings(defaultLat, defaultLng) {
             if ( typeof loadPluginSettings !== 'undefined' && loadPluginSettings) {
-                // 如果有 default_location（从device config加载的），直接使用它
-                // 否则才使用 pluginSettings 中保存的坐标
-                const useDefault = defaultLat && defaultLng;
-                document.getElementById('latitude').value = useDefault ? defaultLat : (pluginSettings.latitude || '39.9042');
-                document.getElementById('longitude').value = useDefault ? defaultLng : (pluginSettings.longitude || '116.4074');
+                // 完全使用 default_location，忽略 pluginSettings 中的坐标
+                // 如果没有 default_location，使用东城作为fallback
+                document.getElementById('latitude').value = defaultLat || '39.9042';
+                document.getElementById('longitude').value = defaultLng || '116.4074';
                 document.getElementById('units').value = pluginSettings.units || 'metric';
                 document.getElementById('language').value = pluginSettings.language || 'zh';
                 document.getElementById('themeMode').value = pluginSettings.themeMode || 'auto';
