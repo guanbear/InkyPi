@@ -380,8 +380,6 @@
         // Draw icons after datasets but before axis labels
         const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
 
-        if (!sunriseTime && !sunsetTime) return;
-
         ctx.save();
 
         // Track which indices have sunrise/sunset to avoid overlap
