@@ -433,43 +433,6 @@
       }
     });
 
-    // Register plugin for drawing hourly weather icons
-    // Test: force draw without checking complete status
-    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
-    const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
-
-    if (displayGraphIcons && weatherIconsPaths.length > 0 && weatherIconsPaths[0]) {
-      const testIcon = new Image();
-      testIcon.src = weatherIconsPaths[0];
-
-      Chart.register({
-        id: 'chartIcons',
-        afterDatasetsDraw(chart) {
-          const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-
-          ctx.save();
-
-          const meta = chart.getDatasetMeta(0);
-          if (meta && meta.data && meta.data[0]) {
-            // Force draw without checking complete
-            try {
-              const point = meta.data[0];
-              const iconSize = 22;
-              const xPos = point.x - (iconSize / 2);
-              const yPos = bottom + 25;
-
-              ctx.drawImage(testIcon, xPos, yPos, iconSize, iconSize);
-              console.log('Forced draw icon at', xPos, yPos, 'complete:', testIcon.complete, 'width:', testIcon.naturalWidth);
-            } catch (e) {
-              console.error('Draw error:', e.message);
-            }
-          }
-
-          ctx.restore();
-        }
-      });
-    }
-
     const chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
