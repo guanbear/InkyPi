@@ -369,6 +369,8 @@
     });
 
     // Register separate plugin for drawing sunrise/sunset icons
+    // DISABLED FOR TESTING
+    /*
     Chart.register({
       id: 'sunriseSunsetIcons',
       afterDatasetsDraw(chart) {
@@ -432,6 +434,7 @@
         ctx.restore();
       }
     });
+    */
 
     // Register plugin for drawing hourly weather icons
     const weatherIconsBase64 = [{% for hour in hourly_forecast %}{{ '"%s"' % hour.icon_base64 if hour.icon_base64 else '""' }}{% if not loop.last %}, {% endif %}{% endfor %}];
