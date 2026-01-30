@@ -373,9 +373,9 @@
       }
     });
 
-    // Register separate plugin for drawing sunrise/sunset icons
+    // Register separate plugin for drawing sunrise/sunset icons AND hourly weather icons (merged)
     Chart.register({
-      id: 'sunriseSunsetIcons',
+      id: 'sunriseSunsetAndHourlyIcons',
       afterDatasetsDraw(chart) {
         // Draw icons after datasets but before axis labels
         const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
@@ -383,6 +383,9 @@
         if (!sunriseTime && !sunsetTime) return;
 
         ctx.save();
+
+        // Track which indices have sunrise/sunset to avoid overlap
+        const reservedIndices = new Set();
 
         // Draw sunrise icon
         if (sunriseTime) {
@@ -398,9 +401,10 @@
           });
 
           if (sunriseIndex !== -1) {
+            reservedIndices.add(sunriseIndex);
             const xPos = x.getPixelForValue(sunriseIndex);
-            const iconSize = 14;
-            const iconY = bottom + 5; // Position below the axis line
+            const iconSize = 18; // Uniform size
+            const iconY = bottom + 5; // Unified position
 
             // Draw icon
             if (sunriseImg.complete && sunriseImg.naturalWidth > 0) {
@@ -423,9 +427,10 @@
           });
 
           if (sunsetIndex !== -1) {
+            reservedIndices.add(sunsetIndex);
             const xPos = x.getPixelForValue(sunsetIndex);
-            const iconSize = 14;
-            const iconY = bottom + 5; // Position below the axis line
+            const iconSize = 18; // Uniform size
+            const iconY = bottom + 5; // Unified position
 
             // Draw icon
             if (sunsetImg.complete && sunsetImg.naturalWidth > 0) {
@@ -434,39 +439,36 @@
           }
         }
 
+        // Draw hourly weather icons (if enabled)
+        {% if plugin_settings.displayGraphIcons == "true" %}
+        if (weatherIconsPaths && weatherIconsPaths.length > 0) {
+          const iconSize = 18; // Match sunrise/sunset size
+          const iconY = bottom + 5; // Same position
+
+          chart.getDatasetMeta(0).data.forEach((point, i) => {
+            // Skip if not at iconStep interval
+            if (i % iconStep !== 0) return;
+
+            // Skip if this position has sunrise/sunset icon
+            if (reservedIndices.has(i)) return;
+
+            // Create NEW Image object each time (official way)
+            const img = new Image();
+            img.src = weatherIconsPaths[i];
+            const xPos = point.x - (iconSize / 2);
+
+            if (img.complete) {
+              ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+            } else {
+              img.onload = () => ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+            }
+          });
+        }
+        {% endif %}
+
         ctx.restore();
       }
     });
-
-    // Hourly weather icons plugin (exact copy from official weather plugin)
-    {% if plugin_settings.displayGraphIcons == "true" %}
-    Chart.register({
-      id: 'chartIcons',
-      afterDatasetsDraw(chart) {
-        const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 20;
-
-        ctx.save();
-        chart.getDatasetMeta(0).data.forEach((point, i) => {
-          // Skip if not at iconStep interval
-          if (i % iconStep !== 0) return;
-
-          // Create NEW Image object each time (official way)
-          const img = new Image();
-          img.src = weatherIconsPaths[i];
-          const xPos = point.x - (iconSize / 2);
-          const yPos = bottom + 25;
-
-          if (img.complete) {
-            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-          } else {
-            img.onload = () => ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-          }
-        });
-        ctx.restore();
-      }
-    });
-    {% endif %}
 
     const chartInstance = new Chart(ctx, {
       type: 'line',
