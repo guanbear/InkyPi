@@ -434,16 +434,12 @@
     });
 
     // Register plugin for drawing hourly weather icons
-    // Simplified test: draw only ONE icon
+    // Test: force draw without checking complete status
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
 
     if (displayGraphIcons && weatherIconsPaths.length > 0 && weatherIconsPaths[0]) {
-      // Preload only first icon
       const testIcon = new Image();
-      testIcon.onload = function() {
-        console.log('Test icon loaded successfully');
-      };
       testIcon.src = weatherIconsPaths[0];
 
       Chart.register({
@@ -455,15 +451,17 @@
 
           const meta = chart.getDatasetMeta(0);
           if (meta && meta.data && meta.data[0]) {
-            // Draw only first icon as test
-            if (testIcon.complete && testIcon.naturalWidth > 0) {
+            // Force draw without checking complete
+            try {
               const point = meta.data[0];
               const iconSize = 22;
               const xPos = point.x - (iconSize / 2);
               const yPos = bottom + 25;
 
               ctx.drawImage(testIcon, xPos, yPos, iconSize, iconSize);
-              console.log('Drew test icon at', xPos, yPos);
+              console.log('Forced draw icon at', xPos, yPos, 'complete:', testIcon.complete, 'width:', testIcon.naturalWidth);
+            } catch (e) {
+              console.error('Draw error:', e.message);
             }
           }
 
