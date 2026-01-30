@@ -167,10 +167,6 @@
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation }}{% if not loop.last %}, {% endif %}{% endfor %}]; // 0-1 for probability
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
 
-    // Map rain to display height using square root (reduces impact of large values)
-    const rainHeight = rain.map(r => Math.sqrt(r) * 8); // Increased from 5 to 8 for better visibility
-    const maxRainHeight = Math.max(...rainHeight, 1); // At least 1 to avoid divide by zero
-
     // Sunrise/sunset times
     const sunriseTime = {% if sunrise_time %}"{{ sunrise_time }}"{% else %}null{% endif %};
     const sunsetTime = {% if sunset_time %}"{{ sunset_time }}"{% else %}null{% endif %};
@@ -487,8 +483,8 @@
         },
         {
           type: 'bar',
-          label: 'Precipitation Amount',
-          data: rainHeight, // Use mapped rain height instead of probability
+          label: 'Precipitation Probability',
+          data: precipitation.map(p => p * 100), // Convert 0-1 to 0-100%
           backgroundColor: function(context) {
             const index = context.dataIndex;
             const prob = precipitation[index];
@@ -581,22 +577,13 @@
               },
               autoSkip: false,
               callback: function(value, index, values) {
-                if (index === values.length - 1) {
-                  // Calculate actual rain amount from mapped height (using factor of 8)
-                  const actualRain = Math.pow(maxRainHeight / 8, 2);
-                  // Only show unit if value is significant (>0.1)
-                  if (actualRain > 0.1) {
-                    return actualRain.toFixed(1) + unit;
-                  } else {
-                    return "0" + unit;
-                  }
-                }
-                else if (index === 0) return "0" + unit;
+                if (index === values.length - 1) return "100%";
+                else if (index === 0) return "0%";
                 else return '';
               }
             },
             min: 0,
-            max: maxRainHeight,
+            max: 100,
           }
         },
         plugins: {
