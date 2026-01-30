@@ -129,16 +129,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             f"--force-device-scale-factor=1",
             "--virtual-time-budget=6000",
             "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--use-gl=swiftshader",
             "--hide-scrollbars",
-            "--in-process-gpu",
-            "--js-flags=--jitless",
-            "--disable-zero-copy",
-            "--disable-gpu-memory-buffer-compositor-resources",
-            "--disable-extensions",
-            "--disable-plugins",
-            "--mute-audio",
             "--no-sandbox"
         ]
         if timeout_ms:
