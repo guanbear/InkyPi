@@ -434,59 +434,43 @@
     });
 
     // Register plugin for drawing hourly weather icons
-    // DISABLED: Causes Chart.js to crash in headless Chrome
-    /*
-    const weatherIconsBase64 = [{% for hour in hourly_forecast %}{{ '"%s"' % hour.icon_base64 if hour.icon_base64 else '""' }}{% if not loop.last %}, {% endif %}{% endfor %}];
-    const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
+    // Simplified test: draw only ONE icon
+    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const displayGraphIcons = "{{ plugin_settings.displayGraphIcons }}" === "true";
 
-    console.log('Graph icons enabled:', displayGraphIcons);
-    console.log('Icon step:', iconStep);
-    console.log('Base64 icons count:', weatherIconsBase64.length);
+    if (displayGraphIcons && weatherIconsPaths.length > 0 && weatherIconsPaths[0]) {
+      // Preload only first icon
+      const testIcon = new Image();
+      testIcon.onload = function() {
+        console.log('Test icon loaded successfully');
+      };
+      testIcon.src = weatherIconsPaths[0];
 
-    // Register plugin with base64 encoded images
-    if (displayGraphIcons && weatherIconsBase64.length > 0) {
       Chart.register({
         id: 'chartIcons',
         afterDatasetsDraw(chart) {
           const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-          const iconSize = 22;
 
           ctx.save();
 
           const meta = chart.getDatasetMeta(0);
-          if (!meta || !meta.data) {
-            ctx.restore();
-            return;
+          if (meta && meta.data && meta.data[0]) {
+            // Draw only first icon as test
+            if (testIcon.complete && testIcon.naturalWidth > 0) {
+              const point = meta.data[0];
+              const iconSize = 22;
+              const xPos = point.x - (iconSize / 2);
+              const yPos = bottom + 25;
+
+              ctx.drawImage(testIcon, xPos, yPos, iconSize, iconSize);
+              console.log('Drew test icon at', xPos, yPos);
+            }
           }
 
-          let drawnCount = 0;
-          meta.data.forEach((point, i) => {
-            // Skip hours based on frequency setting
-            if (i % iconStep !== 0) return;
-
-            // Skip if no base64 data
-            if (!weatherIconsBase64[i] || weatherIconsBase64[i] === "") return;
-
-            // Create image from base64 data - no loading needed!
-            const img = new Image();
-            img.src = weatherIconsBase64[i];
-
-            const xPos = point.x - (iconSize / 2);
-            const yPos = bottom + 25;  // Position below sunrise/sunset icons
-
-            // Base64 images are immediately available
-            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
-            drawnCount++;
-          });
-
-          console.log(`Drew ${drawnCount} weather icons on chart`);
           ctx.restore();
         }
       });
-      console.log('Chart icons plugin registered with base64 data');
     }
-    */
 
     const chartInstance = new Chart(ctx, {
       type: 'line',
