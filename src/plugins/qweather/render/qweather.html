@@ -385,17 +385,21 @@
     const sunsetImg = new Image();
     sunriseImg.src = sunriseIcon;
     sunsetImg.src = sunsetIcon;
+    console.log('Sunrise/sunset icons created, sunrise complete:', sunriseImg.complete, 'sunset complete:', sunsetImg.complete);
 
     // Preload weather icons
     const weatherIcons = {};
     if (displayGraphIcons && weatherIconsPaths.length > 0) {
+      console.log('Preloading', weatherIconsPaths.length, 'hourly weather icons with iconStep', iconStep);
       weatherIconsPaths.forEach((path, i) => {
         if (path && i % iconStep === 0) {
           const img = new Image();
           img.src = path;
           weatherIcons[i] = img;
+          console.log('Preloaded icon', i, 'path:', path, 'complete:', img.complete);
         }
       });
+      console.log('Total weather icons preloaded:', Object.keys(weatherIcons).length);
     }
 
     Chart.register({
@@ -449,25 +453,44 @@
 
         // Draw hourly weather icons (skip sunrise/sunset positions)
         if (displayGraphIcons) {
+          console.log('Drawing hourly weather icons, sunriseIndex:', sunriseIndex, 'sunsetIndex:', sunsetIndex);
+          let drawnCount = 0;
+          let skippedCount = 0;
           meta.data.forEach((point, i) => {
             // Skip if not at iconStep interval
-            if (i % iconStep !== 0) return;
+            if (i % iconStep !== 0) {
+              skippedCount++;
+              return;
+            }
 
             // Skip if conflicts with sunrise/sunset
-            if (i === sunriseIndex || i === sunsetIndex) return;
+            if (i === sunriseIndex || i === sunsetIndex) {
+              console.log('Skipping icon at index', i, 'conflicts with sunrise/sunset');
+              skippedCount++;
+              return;
+            }
 
             // Skip if no icon
-            if (!weatherIcons[i]) return;
+            if (!weatherIcons[i]) {
+              console.log('No weather icon at index', i);
+              skippedCount++;
+              return;
+            }
 
             const img = weatherIcons[i];
             const xPos = point.x - (iconSize / 2);
+            console.log('Attempting to draw icon', i, 'at xPos:', xPos, 'complete:', img.complete, 'width:', img.width, 'height:', img.height);
 
             try {
               ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+              drawnCount++;
+              console.log('Successfully drew icon', i);
             } catch (e) {
-              // Image not loaded, skip
+              console.log('Failed to draw icon', i, 'error:', e);
+              skippedCount++;
             }
           });
+          console.log('Total icons drawn:', drawnCount, 'skipped:', skippedCount);
         }
 
         // Draw sunrise icon (overwrites weather icon if any)

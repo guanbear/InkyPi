@@ -130,7 +130,9 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-dev-shm-usage",
             "--hide-scrollbars",
             "--no-sandbox",
-            "--timeout=10000"
+            "--timeout=10000",
+            "--enable-logging",
+            "--v=1"
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
@@ -138,8 +140,10 @@ def take_screenshot(target, dimensions, timeout_ms=None):
 
         logger.info(f"Chrome command: {' '.join(command)}")
         logger.info(f"Chrome returned: {result.returncode}")
+        if result.stdout:
+            logger.info(f"Chrome stdout: {result.stdout.decode('utf-8')[:1000]}")
         if result.stderr:
-            logger.info(f"Chrome stderr: {result.stderr.decode('utf-8')[:500]}")
+            logger.info(f"Chrome stderr: {result.stderr.decode('utf-8')[:1000]}")
 
         # Check if the process failed or the output file is missing
         if result.returncode != 0 or not os.path.exists(img_file_path):
