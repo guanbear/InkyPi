@@ -481,39 +481,40 @@
             const xPos = point.x - (iconSize / 2);
             console.log('Attempting to draw icon', i, 'at xPos:', xPos, 'complete:', img.complete, 'width:', img.width, 'height:', img.height);
 
-            // Only draw if image is loaded (same check as sunrise/sunset)
-            if (!img.complete) {
-              console.log('Icon', i, 'not loaded yet, skipping');
-              skippedCount++;
-              return;
-            }
-
-            try {
+            // Use same approach as official weather plugin: onload callback
+            if (img.complete) {
               ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
               drawnCount++;
-              console.log('Successfully drew icon', i);
-            } catch (e) {
-              console.log('Failed to draw icon', i, 'error:', e);
-              skippedCount++;
+              console.log('Successfully drew icon', i, ' (already loaded)');
+            } else {
+              img.onload = () => {
+                ctx.drawImage(img, xPos, iconY, iconSize, iconSize);
+                console.log('Successfully drew icon', i, ' (onload callback)');
+              };
+              console.log('Set onload callback for icon', i);
             }
           });
           console.log('Total icons drawn:', drawnCount, 'skipped:', skippedCount);
         }
 
         // Draw sunrise icon (overwrites weather icon if any)
-        if (sunriseIndex !== -1 && sunriseImg.complete) {
+        if (sunriseIndex !== -1) {
           const xPos = x.getPixelForValue(sunriseIndex);
-          try {
+          if (sunriseImg.complete) {
             ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
-          } catch (e) {}
+          } else {
+            sunriseImg.onload = () => ctx.drawImage(sunriseImg, xPos - iconSize/2, iconY, iconSize, iconSize);
+          }
         }
 
         // Draw sunset icon (overwrites weather icon if any)
-        if (sunsetIndex !== -1 && sunsetImg.complete) {
+        if (sunsetIndex !== -1) {
           const xPos = x.getPixelForValue(sunsetIndex);
-          try {
+          if (sunsetImg.complete) {
             ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
-          } catch (e) {}
+          } else {
+            sunsetImg.onload = () => ctx.drawImage(sunsetImg, xPos - iconSize/2, iconY, iconSize, iconSize);
+          }
         }
 
         ctx.restore();
