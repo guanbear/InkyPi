@@ -127,7 +127,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             f"--screenshot={img_file_path}",
             f"--window-size={dimensions[0]},{dimensions[1]}",
             f"--force-device-scale-factor=1",
-            "--virtual-time-budget=3000",
+            "--virtual-time-budget=6000",
             "--disable-dev-shm-usage",
             "--disable-gpu",
             "--use-gl=swiftshader",
