@@ -610,6 +610,7 @@ class QWeather(BasePlugin):
         current_temp = float(weather_data.get('temp', 0))
         feels_like = float(weather_data.get('feelsLike', current_temp))
         current_text = weather_data.get('text', '')  # 天气情况文字（如"晴"、"多云"）
+        logger.info(f"Current weather text: '{current_text}'")
 
         if language == "zh":
             now = datetime.now(tz)
@@ -1216,22 +1217,26 @@ class QWeather(BasePlugin):
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
 
-        # Wind - display as "WindDir Level" (e.g., "西风 2级")
+        # Wind - use wind direction as label, wind scale as measurement
         wind_dir_text = current_weather.get('windDir', '')  # 风向文字（如"西风"）
         wind_scale = current_weather.get('windScale', '0')  # 风力等级（如"2"）
         wind_dir_360 = current_weather.get('wind360', '0')
         wind_arrow = self.get_wind_arrow(float(wind_dir_360) if wind_dir_360 else 0)
 
-        # Format: "西风 2级" or "West Level 2"
+        # Format: label="西风", measurement="2", unit="级"
         if language == "zh":
-            wind_display = f"{wind_dir_text} {wind_scale}级"
+            wind_label = wind_dir_text  # "西风"
+            wind_measurement = wind_scale  # "2"
+            wind_unit = "级"
         else:
-            wind_display = f"{wind_dir_text} L{wind_scale}"
+            wind_label = wind_dir_text  # "West"
+            wind_measurement = wind_scale  # "2"
+            wind_unit = "Level"
 
         data_points.append({
-            "label": LABELS[language]["wind"],
-            "measurement": wind_display,
-            "unit": "",
+            "label": wind_label,
+            "measurement": wind_measurement,
+            "unit": wind_unit,
             "icon": self.get_plugin_dir('icons/wind.png'),
             "arrow": wind_arrow
         })
@@ -1276,9 +1281,9 @@ class QWeather(BasePlugin):
             # Use the new air-quality.png icon for qweather style
             aqi_icon_path = self.get_plugin_dir('icons/air-quality.png') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
             data_points.append({
-                "label": LABELS[language]["air_quality"],
-                "measurement": aqi_category,  # 只显示等级文字（如"优"、"良"）
-                "unit": "",  # 不显示数字
+                "label": aqi_category if aqi_category else LABELS[language]["air_quality"],  # label用等级（如"优"）
+                "measurement": aqi,  # measurement显示数值
+                "unit": "",
                 "icon": aqi_icon_path,
                 "aqi_color": aqi_color
             })
