@@ -669,6 +669,10 @@ class QWeather(BasePlugin):
             data['forecast_temp_max'] = 0
             data['forecast_temp_min'] = 0
 
+        # Debug: check if current_text is in data
+        logger.info(f"Template data keys: {list(data.keys())}")
+        logger.info(f"current_text value: '{data.get('current_text', 'KEY_NOT_FOUND')}'")
+
         return data, sunrise_dt, sunset_dt
 
     def map_qweather_icon(self, qweather_icon, display_style="default", is_day="1"):
@@ -1217,26 +1221,23 @@ class QWeather(BasePlugin):
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
 
-        # Wind - use wind direction as label, wind scale as measurement
+        # Wind - label shows "WindDir Level", measurement shows speed
         wind_dir_text = current_weather.get('windDir', '')  # 风向文字（如"西风"）
         wind_scale = current_weather.get('windScale', '0')  # 风力等级（如"2"）
+        wind_speed = current_weather.get('windSpeed', '0')  # 风速数值
         wind_dir_360 = current_weather.get('wind360', '0')
         wind_arrow = self.get_wind_arrow(float(wind_dir_360) if wind_dir_360 else 0)
 
-        # Format: label="西风", measurement="2", unit="级"
+        # Format: label="西风 2级", measurement=wind_speed, unit=km/h
         if language == "zh":
-            wind_label = wind_dir_text  # "西风"
-            wind_measurement = wind_scale  # "2"
-            wind_unit = "级"
+            wind_label = f"{wind_dir_text} {wind_scale}级"  # "西风 2级"
         else:
-            wind_label = wind_dir_text  # "West"
-            wind_measurement = wind_scale  # "2"
-            wind_unit = "Level"
+            wind_label = f"{wind_dir_text} Level {wind_scale}"  # "West Level 2"
 
         data_points.append({
             "label": wind_label,
-            "measurement": wind_measurement,
-            "unit": wind_unit,
+            "measurement": wind_speed,
+            "unit": UNITS[units]["speed"],
             "icon": self.get_plugin_dir('icons/wind.png'),
             "arrow": wind_arrow
         })
@@ -1280,9 +1281,13 @@ class QWeather(BasePlugin):
             aqi_color = self.get_aqi_color(aqi) if aqi != 'N/A' else None
             # Use the new air-quality.png icon for qweather style
             aqi_icon_path = self.get_plugin_dir('icons/air-quality.png') if display_style == "qweather" else self.get_plugin_dir('icons/aqi.png')
+
+            # Format: label="空气质量 优"
+            aqi_label = f"{LABELS[language]['air_quality']} {aqi_category}" if aqi_category else LABELS[language]["air_quality"]
+
             data_points.append({
-                "label": aqi_category if aqi_category else LABELS[language]["air_quality"],  # label用等级（如"优"）
-                "measurement": aqi,  # measurement显示数值
+                "label": aqi_label,  # "空气质量 优"
+                "measurement": aqi,  # AQI数值
                 "unit": "",
                 "icon": aqi_icon_path,
                 "aqi_color": aqi_color
