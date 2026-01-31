@@ -166,6 +166,7 @@ body {
 .weather-dashboard.dark-mode .title,
 .weather-dashboard.dark-mode .current-date,
 .weather-dashboard.dark-mode .current-temp,
+.weather-dashboard.dark-mode .current-text,
 .weather-dashboard.dark-mode .feels-like,
 .weather-dashboard.dark-mode .min-max,
 .weather-dashboard.dark-mode .data-point-label,
