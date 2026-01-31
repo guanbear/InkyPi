@@ -534,6 +534,7 @@ body {
   text-align: center;
   margin-bottom: 0.2em;
   font-weight: 500;
+  color: inherit;  /* 继承父元素颜色 */
 }
 
 .feels-like {
