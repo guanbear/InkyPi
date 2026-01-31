@@ -530,11 +530,13 @@ body {
 }
 
 .current-text {
-  font-size: 10cqmin;
+  font-size: 12cqmin;  /* 增大字体 */
   text-align: center;
-  margin-bottom: 0.2em;
-  font-weight: 500;
-  color: inherit;  /* 继承父元素颜色 */
+  margin-bottom: 0.5em;
+  font-weight: 600;  /* 加粗 */
+  color: #FF0000;  /* 临时设为红色便于调试 */
+  border: 2px solid blue;  /* 添加边框便于看到位置 */
+  padding: 5px;
 }
 
 .feels-like {
