@@ -36,6 +36,7 @@
       <!-- Icon + Temperature -->
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
         <div class="current-weather">
+          <div class="current-text">{{ current_text }}</div>
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
           <div class="feels-like"><span class="feels-like-label">{{ labels.feels_like }}</span> <span class="feels-like-value">{{ feels_like }}{% if units != "standard" %}°{% endif %}</span></div>
           <div class="min-max">{{ forecast[0].high }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].low }}{% if units != "standard" %}°{% endif %}</div>
@@ -439,6 +440,7 @@
 
         ctx.save();
         ctx.textAlign = 'center';
+        ctx.font = '12px Jost';  // 设置字体与Chart.js一致
 
         meta.data.forEach((bar, i) => {
           const rainAmount = rainData[i];
@@ -459,6 +461,7 @@
             }
             ctx.fillStyle = textColor;
             ctx.fillText(rainAmount.toFixed(2), x, textY);
+            ctx.font = '10px Jost';  // 单位用稍小的字体
             ctx.fillText(unit, x, unitY);
           }
         });

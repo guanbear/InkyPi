@@ -528,6 +528,13 @@ body {
   line-height: 140%;
 }
 
+.current-text {
+  font-size: 10cqmin;
+  text-align: center;
+  margin-bottom: 0.2em;
+  font-weight: 500;
+}
+
 .feels-like {
   font-size: 10cqmin;
   text-align: center;
